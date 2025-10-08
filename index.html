@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<!-- iPhone/iPad 最適化（Service Worker / Manifest は未使用） -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#6c5ce7" />
+<title>はじめての たしざん・ひきざん ブロック（10×1 & ステージ／単一ファイル）</title>
+<style>
+  :root{
+    --bg:#f7f8fb; --panel:#ffffff; --text:#1f2a44; --muted:#6b7280; --accent:#6c5ce7;
+    --gap:10px; --block-size:64px; --dur:600ms;
+    --c-red:#ef4444; --c-orange:#f59e0b; --c-yellow:#facc15; --c-green:#22c55e;
+    --c-aqua:#38bdf8; --c-purple:#a855f7; --c-lilac:#c084fc; --c-hotpink:#e91e63; --c-gray:#9ca3af;
+    --ten-border:#ef4444; --ten-bg:#ffffff;
+    --flash:#fff6;
+  }
+  *{box-sizing:border-box}
+  html, body { height: 100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: ui-rounded, system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  header{
+    padding:16px calc(20px + env(safe-area-inset-right)) 16px calc(20px + env(safe-area-inset-left));
+    background:linear-gradient(90deg, var(--accent), #8e79ff);
+    color:white; position:sticky; top:0; z-index:10;
+  }
+  header h1{ margin:0; font-size: clamp(18px, 3.5vw, 22px); }
+  main{ max-width:1100px; margin:20px auto; padding:0 16px; }
+  .card{
+    background:var(--panel); border-radius:14px; box-shadow: 0 8px 24px rgba(31,42,68,.08);
+    padding:16px;
+  }
+  .controls{ display:grid; gap:12px; grid-template-columns: 1fr; }
+  .row{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .row > * { flex:0 0 auto; }
+  label{ font-size:14px; color:var(--muted); }
+  input[type="number"]{
+    width:110px; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; font-size:20px; text-align:center;
+  }
+  select{
+    padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; font-size:18px;
+  }
+  button{
+    border:0; border-radius:999px; padding:12px 16px; font-size:16px; background:#ecebff; color:#3e2cff;
+    cursor:pointer; transition:.15s transform, .15s filter; font-weight:600; -webkit-tap-highlight-color: transparent;
+  }
+  button.primary{ background:#3e2cff; color:white; }
+  button:disabled{ filter:grayscale(.8); opacity:.6; cursor:not-allowed; }
+  .speed{ display:flex; align-items:center; gap:10px; color:var(--muted); }
+  input[type="range"]{ width:180px; }
+
+  .workspace{
+    margin-top:16px; padding:14px; border:1px dashed #d1d5db; border-radius:12px; background:#fcfdff;
+    position:relative; overflow:clip;
+  }
+  .equation{
+    font-size: clamp(18px, 2.5vw, 24px);
+    display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;
+  }
+  .eq-num{ min-width:40px; text-align:center; font-weight:700; }
+  .eq-op, .eq-eq{ opacity:.7; font-weight:700; }
+
+  /* ★ 縦並びレイアウト（数A → 数B → こたえ） */
+  .boards{
+    display:grid; grid-template-columns: 1fr; gap:14px;
+    align-items:start; justify-items:stretch;
+  }
+  .board{ width:100%; background:white; border:1px solid #edf2f7; border-radius:12px; padding:10px; }
+  .board h3{ margin:0 0 8px; font-size:14px; color:var(--muted); text-align:left; }
+  .sep{ display:none !important; }
+
+  /* 最大横10列（横スクロールなし） */
+  .blocks{
+    display:grid;
+    grid-template-columns: repeat(10, var(--block-size));
+    grid-auto-rows: var(--block-size);
+    gap: var(--gap);
+    justify-content:flex-start; align-content:start; width:100%;
+  }
+
+  /* ユニット */
+  .block{ width:var(--block-size); height:var(--block-size); border-radius:12px; box-shadow: 0 3px 8px rgba(0,0,0,.08); transform: translateZ(0); position:relative; }
+  .block.one{ border:none; }
+  .block.tenu{ background: var(--ten-bg); border: 4px solid var(--ten-border); }
+
+  /* 色（1〜9） */
+  .c-red{ background: var(--c-red); } .c-orange{ background: var(--c-orange); } .c-yellow{ background: var(--c-yellow); }
+  .c-green{ background: var(--c-green); } .c-aqua{ background: var(--c-aqua); } .c-purple{ background: var(--c-purple); }
+  .c-lilac{ background: var(--c-lilac); } .c-hotpink{ background: var(--c-hotpink); } .c-gray{ background: var(--c-gray); }
+
+  .hint{ margin-top:10px; color:var(--muted); font-size:14px; text-align:center; }
+
+  /* 飛行クローン・消滅 */
+  .fly-clone{ position:fixed; z-index:9999; border-radius:12px; box-shadow: 0 3px 10px rgba(0,0,0,.2); will-change: transform, opacity; }
+  .poof{ animation: poof .35s ease forwards; }
+  @keyframes poof{ 0% { transform: scale(1); opacity:1; } 100%{ transform: scale(.3); opacity:0; filter: blur(1px); } }
+  .cross{ position:relative; overflow:hidden; }
+  .cross::before, .cross::after{ content:""; position:absolute; left:8px; right:8px; height:6px; background:rgba(255,255,255,.9); top:calc(50% - 3px); border-radius:6px; transform:rotate(45deg); }
+  .cross::after{ transform:rotate(-45deg); }
+
+  /* ===== チャレンジ UI ===== */
+  .challenge-bar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px;
+    border-top:1px dashed #e5e7eb; padding-top:10px;
+  }
+  .progress{ display:flex; gap:6px; align-items:center; }
+  .dot{ width:18px; height:18px; border-radius:50%; background:#e5e7eb; border:2px solid #c7c9d1; }
+  .dot.done{ background:#22c55e; border-color:#16a34a; }
+  .dot.fail{ background:#ef4444; border-color:#dc2626; }
+  .score{ color:var(--muted); font-weight:700; }
+  .ans-area{ display:flex; align-items:center; gap:8px; }
+  #ansInput{ width:110px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:10px; font-size:18px; text-align:center; }
+  #checkMsg{ min-width:110px; font-weight:800; letter-spacing:.02em; }
+  #dailyStats{ color:var(--muted); font-size:13px; margin-left:auto; }
+  .hidden{ display:none !important; }
+
+  /* ===== 正解派手エフェクト ===== */
+  .celebrate{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:9998; }
+  .confetti{ position:absolute; width:10px; height:14px; opacity:0.9; will-change: transform, opacity; animation: confetti-fall 900ms ease-out forwards; }
+  @keyframes confetti-fall{ 0% { transform: translateY(-20vh) rotate(0deg); opacity:0; } 10%{ opacity:1; } 100%{ transform: translateY(110vh) rotate(720deg); opacity:0; } }
+  .pulse{ position:absolute; inset:0; pointer-events:none; z-index:9997; }
+  .pulse::before{ content:""; position:absolute; left:50%; top:50%; width:20vmin; height:20vmin; border-radius:50%; transform: translate(-50%,-50%); background: radial-gradient(circle, #fff7 0%, transparent 60%); animation: pulse-ring 900ms ease-out forwards; }
+  @keyframes pulse-ring{ 0% { transform: translate(-50%,-50%) scale(.6); opacity:.9; } 100%{ transform: translate(-50%,-50%) scale(2.4); opacity:0; } }
+  .flash{ position:absolute; inset:0; background: var(--flash); animation: flashout 300ms ease-out forwards; }
+  @keyframes flashout{ from{ opacity:1; } to{ opacity:0; } }
+
+  /* ===== スタンプ ===== */
+  .stamp{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,.18); z-index:10000; pointer-events:auto;
+    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom);
+  }
+  .stamp.hidden{ display:none; }
+  .stamp-card{
+    background:white; border-radius:24px; padding:20px 26px; text-align:center;
+    box-shadow: 0 18px 50px rgba(0,0,0,.22);
+    transform: scale(.6) rotate(-3deg);
+    animation: stamp-in 480ms cubic-bezier(.2, .9, .2, 1.2) forwards;
+    border:6px dashed #f59e0b;
+  }
+  @keyframes stamp-in{ 0% { transform: scale(.4) rotate(-8deg); opacity:0; } 100%{ transform: scale(1) rotate(0deg); opacity:1; } }
+  .stamp-emoji{ font-size: min(22vmin, 180px); line-height:1; }
+  .stamp-title{ font-size:20px; font-weight:800; color:#ef4444; margin-top:8px; }
+  .stamp-sub{ font-size:14px; color:#6b7280; margin-top:4px; }
+  .stamp-close{ margin-top:12px; padding:8px 14px; border-radius:999px; border:0; background:#3e2cff; color:#fff; font-weight:700; }
+
+  @media (max-width:740px){
+    :root{ --block-size:52px; --gap:8px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>はじめての たしざん・ひきざん ブロック（10×1 & ステージ／単一ファイル）</h1>
+</header>
+<main>
+  <section class="card controls" aria-label="コントロール">
+    <div class="row" id="basicControls">
+      <label>演算</label>
+      <select id="op" aria-label="演算を選択">
+        <option value="+">＋（たす）</option>
+        <option value="-">−（ひく）</option>
+      </select>
+
+      <label>数A</label>
+      <input id="a" type="number" min="0" max="20" value="13" inputmode="numeric" pattern="[0-9]*" />
+
+      <label>数B</label>
+      <input id="b" type="number" min="0" max="20" value="7" inputmode="numeric" pattern="[0-9]*" />
+
+      <button id="play" class="primary">▶ 再生</button>
+      <button id="reset">↺ リセット</button>
+      <button id="random">🎲 ランダム</button>
+
+      <div class="speed">
+        <span>スピード</span>
+        <input id="speed" type="range" min="0.5" max="2.0" step="0.25" value="1.0" />
+        <span id="speedLabel">x1.0</span>
+      </div>
+
+      <button id="soundToggle">🔊 サウンド ON</button>
+    </div>
+
+    <div class="challenge-bar">
+      <label for="modeSel">出題</label>
+      <select id="modeSel" aria-label="チャレンジ出題モード">
+        <option value="plus" selected>足し算のみ</option>
+        <option value="minus">引き算のみ</option>
+        <option value="mixed">足し算と引き算</option>
+      </select>
+
+      <button id="startChallenge">🏁 チャレンジ開始（5問）</button>
+      <div class="ans-area hidden" id="ansArea">
+        <label for="ansInput">こたえ</label>
+        <input id="ansInput" type="number" inputmode="numeric" pattern="[0-9]*" min="0" />
+        <button id="checkAnswer">✓ 確認</button>
+        <span id="checkMsg"></span>
+        <button id="nextQ" class="hidden">次へ ▶</button>
+      </div>
+      <div class="progress" id="progress"></div>
+      <div class="score" id="score">正解 0/5</div>
+      <div id="dailyStats">今日: チャレンジ0回 / 正解0問</div>
+      <button id="endChallenge" class="hidden">終了</button>
+    </div>
+  </section>
+
+  <section class="card workspace" aria-label="ブロックのワークスペース" id="workspace">
+    <div class="equation" aria-live="polite">
+      <span class="eq-num" id="eqA">13</span>
+      <span class="eq-op" id="eqOp">−</span>
+      <span class="eq-num" id="eqB">7</span>
+      <span class="eq-eq">＝</span>
+      <span class="eq-num" id="eqAns">？</span>
+    </div>
+
+    <!-- ★ 縦並び：数A → 数B → こたえ -->
+    <div class="boards" id="boards">
+      <div class="board" aria-label="数Aのブロック">
+        <h3>数A</h3>
+        <div class="blocks" id="left"></div>
+      </div>
+
+      <div class="board" aria-label="数Bのブロック">
+        <h3>数B</h3>
+        <div class="blocks" id="right"></div>
+      </div>
+
+      <div class="board" aria-label="こたえのブロック">
+        <h3>こたえ</h3>
+        <div class="blocks" id="result"></div>
+      </div>
+    </div>
+
+    <div class="hint" id="hint">「再生」を押すとブロックが動きます。</div>
+  </section>
+</main>
+
+<!-- 正解祝いオーバーレイ -->
+<div id="celebrate" class="celebrate hidden"></div>
+
+<!-- ごほうびスタンプ -->
+<div id="stamp" class="stamp hidden" role="dialog" aria-modal="true">
+  <div class="stamp-card">
+    <div class="stamp-emoji" id="stampEmoji">🍎</div>
+    <div class="stamp-title">スタンプGET！</div>
+    <div class="stamp-sub">よくがんばったね</div>
+    <button class="stamp-close" id="stampClose">OK</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const qs = s => document.querySelector(s);
+  const qsa = s => Array.from(document.querySelectorAll(s));
+
+  const el = {
+    op: qs('#op'), a: qs('#a'), b: qs('#b'),
+    play: qs('#play'), reset: qs('#reset'), random: qs('#random'),
+    speed: qs('#speed'), speedLabel: qs('#speedLabel'),
+    left: qs('#left'), right: qs('#right'), result: qs('#result'),
+    eqA: qs('#eqA'), eqB: qs('#eqB'), eqOp: qs('#eqOp'), eqAns: qs('#eqAns'),
+    hint: qs('#hint'), workspace: qs('#workspace'),
+
+    soundToggle: qs('#soundToggle'),
+
+    basicControls: qs('#basicControls'),
+    startCh: qs('#startChallenge'), endCh: qs('#endChallenge'),
+    ansArea: qs('#ansArea'), ansInput: qs('#ansInput'),
+    checkBtn: qs('#checkAnswer'), checkMsg: qs('#checkMsg'),
+    nextQ: qs('#nextQ'), progress: qs('#progress'),
+    score: qs('#score'), modeSel: qs('#modeSel'),
+    dailyStats: qs('#dailyStats'),
+
+    celebrate: qs('#celebrate'),
+    stamp: qs('#stamp'), stampEmoji: qs('#stampEmoji'), stampClose: qs('#stampClose'),
+  };
+
+  let animating = false;
+  let speedMul = parseFloat(el.speed.value);
+  let autoTimer = null; // 自動遷移タイマー
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const ms = (base) => base / speedMul;
+
+  function updateEq(a, b, op, ans=null){ el.eqA.textContent=a; el.eqB.textContent=b; el.eqOp.textContent= op==='+'?'＋':'−'; el.eqAns.textContent= ans===null?'？':ans; }
+  function setDisabled(dis){ [el.op, el.a, el.b, el.random, el.reset].forEach(x=> x.disabled=dis); el.play.disabled = dis; }
+  function clearBlocks(){ el.left.innerHTML=''; el.right.innerHTML=''; el.result.innerHTML=''; }
+
+  const COLOR_CLASS = { red:'c-red', orange:'c-orange', yellow:'c-yellow', green:'c-green', aqua:'c-aqua', purple:'c-purple', lilac:'c-lilac', hotpink:'c-hotpink', gray:'c-gray' };
+  function onesColors(k){
+    switch(k){
+      case 0: return [];
+      case 1: return [COLOR_CLASS.red];
+      case 2: return [COLOR_CLASS.orange, COLOR_CLASS.orange];
+      case 3: return [COLOR_CLASS.yellow, COLOR_CLASS.yellow, COLOR_CLASS.yellow];
+      case 4: return Array(4).fill(COLOR_CLASS.green);
+      case 5: return Array(5).fill(COLOR_CLASS.aqua);
+      case 6: return Array(6).fill(COLOR_CLASS.purple);
+      case 7: return [COLOR_CLASS.red, COLOR_CLASS.orange, COLOR_CLASS.yellow, COLOR_CLASS.green, COLOR_CLASS.aqua, COLOR_CLASS.purple, COLOR_CLASS.lilac];
+      case 8: return Array(8).fill(COLOR_CLASS.hotpink);
+      case 9: return Array(9).fill(COLOR_CLASS.gray);
+      default: return [];
+    }
+  }
+
+  function createTenUnit(role='left'){ const d=document.createElement('div'); d.className=`block tenu ${role}`; d.dataset.kind='tenu'; return d; }
+  function createOneUnit(colorClass, role='left'){ const d=document.createElement('div'); d.className=`block one ${colorClass} ${role}`; d.dataset.kind='one'; return d; }
+  function renderValue(container, n, role){
+    const tens=Math.floor(n/10), ones=n%10;
+    for(let i=0;i<tens;i++){ for(let j=0;j<10;j++){ container.appendChild(createTenUnit(role)); } }
+    for(const cls of onesColors(ones)){ container.appendChild(createOneUnit(cls, role)); }
+  }
+
+  function populate(){
+    const a=clamp(parseInt(el.a.value||0),0,20), b=clamp(parseInt(el.b.value||0),0,20);
+    el.a.value=a; el.b.value=b;
+    clearBlocks();
+    renderValue(el.left, a, 'left'); renderValue(el.right, b, 'right');
+    updateEq(a,b,el.op.value,null); el.hint.textContent='「再生」を押すとブロックが動きます。';
+    requestAnimationFrame(updateResponsiveSizes);
+  }
+
+  /* Responsive: 幅に必ず収める（横10列） */
+  function updateResponsiveSizes(){
+    const wraps=[el.left, el.right, el.result];
+    const widths=wraps.map(w => (w && (w.clientWidth || w.getBoundingClientRect().width)) || 0).filter(w => w>0);
+    const minW = widths.length ? Math.min(...widths) : Math.max(320, el.workspace.clientWidth);
+    let gap = clamp(Math.round(minW * 0.02), 3, 12);
+    let bs = Math.floor((minW - 9 * gap) / 10);
+    if (bs < 10){ gap = 2; bs = Math.floor((minW - 9 * gap) / 10); }
+    bs = Math.max(10, Math.min(bs, 96));
+    document.documentElement.style.setProperty('--gap', `${gap}px`);
+    document.documentElement.style.setProperty('--block-size', `${bs}px`);
+  }
+  window.addEventListener('resize', () => requestAnimationFrame(updateResponsiveSizes));
+
+  /* アニメ基盤 */
+  function flipMove(elm, newParent){
+    return new Promise(resolve => {
+      const start=elm.getBoundingClientRect(); newParent.appendChild(elm); const end=elm.getBoundingClientRect();
+      const dx=start.left-end.left, dy=start.top-end.top;
+      elm.style.transition='none'; elm.style.transform=`translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(()=>{
+        elm.style.transition=`transform ${ms(600)}ms ease`; elm.style.transform='translate(0,0)';
+        const done=()=>{ elm.removeEventListener('transitionend', done); elm.style.transition=''; resolve(); };
+        elm.addEventListener('transitionend', done, { once:true });
+      });
+    });
+  }
+  function flyClone(fromEl, toRect){
+    return new Promise(resolve => {
+      const r1=fromEl.getBoundingClientRect(), clone=fromEl.cloneNode(true);
+      clone.classList.add('fly-clone'); clone.style.width=`${r1.width}px`; clone.style.height=`${r1.height}px`;
+      clone.style.left=`${r1.left}px`; clone.style.top=`${r1.top}px`;
+      clone.style.transition=`transform ${ms(500)}ms ease`; clone.style.transform='translate(0,0)'; document.body.appendChild(clone);
+      requestAnimationFrame(()=>{ const dx=(toRect.left-r1.left), dy=(toRect.top-r1.top); clone.style.transform=`translate(${dx}px, ${dy}px)`; });
+      clone.addEventListener('transitionend', () => resolve(clone), { once:true });
+    });
+  }
+  function flyAndPoofUnit(fromEl, toEl){
+    return new Promise(async resolve => {
+      const toRect=toEl.getBoundingClientRect(), clone=await flyClone(fromEl, toRect);
+      toEl.classList.add('cross'); clone.classList.add('poof'); fromEl.remove(); Audio.pop();
+      setTimeout(()=>{ toEl.classList.add('poof'); setTimeout(()=>{ toEl.remove(); clone.remove(); resolve(); }, ms(320)); }, ms(80));
+    });
+  }
+
+  async function animatePlus(a,b){
+    el.hint.textContent='たしているよ…'; Audio.whoosh();
+    for (const blk of Array.from(el.left.children)){ await flipMove(blk, el.result); }
+    for (const blk of Array.from(el.right.children)){ await flipMove(blk, el.result); }
+    const n=a+b; await new Promise(r=> setTimeout(r, ms(100))); el.result.innerHTML=''; renderValue(el.result, n, 'result');
+    updateEq(a,b,'+',n); el.hint.textContent='できた！ もとのブロックも見てみよう。'; updateResponsiveSizes(); restoreSides(a,b);
+  }
+  async function animateMinus(a,b){
+    if (b>a){ el.hint.textContent='※ 引き算は「数A ≥ 数B」を入力してください。'; return; }
+    el.hint.textContent='ひいているよ…（右端から消えるよ）';
+    for(let i=0;i<b;i++){ const fromRight=el.right.lastElementChild, targetLeft=el.left.lastElementChild; if(!fromRight||!targetLeft) break; await flyAndPoofUnit(fromRight, targetLeft); }
+    for (const blk of Array.from(el.left.children)){ await flipMove(blk, el.result); }
+    const n=a-b; await new Promise(r=> setTimeout(r, ms(100))); el.result.innerHTML=''; renderValue(el.result, n, 'result');
+    updateEq(a,b,'-',n); el.hint.textContent='できた！ もとのブロックも見てみよう。'; updateResponsiveSizes(); restoreSides(a,b);
+  }
+  function restoreSides(a,b){ el.left.innerHTML=''; el.right.innerHTML=''; renderValue(el.left,a,'left'); renderValue(el.right,b,'right'); updateResponsiveSizes(); }
+
+  /* チャレンジ（5問） */
+  const QCOUNT=5;
+  const challenge={ active:false, list:[], idx:0, correct:0, marks:[], mode:'plus' };
+  function buildProgress(){ el.progress.innerHTML=''; for(let i=0;i<QCOUNT;i++){ const d=document.createElement('div'); d.className='dot'+(challenge.marks[i]?' '+challenge.marks[i]:''); el.progress.appendChild(d); } el.score.textContent=`正解 ${challenge.correct}/${QCOUNT}`; }
+
+  /* ★ ユニークキー（足し算はA/B入替も同一扱い） */
+  function problemKey(p){ if(p.op==='+'){ const x=Math.min(p.a,p.b), y=Math.max(p.a,p.b); return `+:${x}:${y}`; } return `-:${p.a}:${p.b}`; }
+
+  /* ★ 生成（チャレンジ：A/Bともに0は出さない） */
+  function genProblem(){
+    const plus = challenge.mode==='plus' ? true : (challenge.mode==='minus' ? false : Math.random()<0.5);
+    let a,b;
+    if(plus){ a=Math.floor(Math.random()*10)+1; b=Math.floor(Math.random()*10)+1; }
+    else { a=Math.floor(Math.random()*19)+2; b=Math.floor(Math.random()*a)+1; }
+    return {op: plus?'+':'-', a, b};
+  }
+
+  /* ★ チャレンジ開始：ユニーク5問を用意（重複/入替重複なし） */
+  function startChallenge(){
+    challenge.mode = el.modeSel.value || 'plus';
+    challenge.active=true; challenge.idx=0; challenge.correct=0; challenge.marks=Array(QCOUNT).fill('');
+    const seen=new Set(), list=[]; let guard=0; const MAX_GUARD=2000;
+    while(list.length<QCOUNT && guard<MAX_GUARD){ const p=genProblem(); const key=problemKey(p); if(!seen.has(key)){ seen.add(key); list.push(p); } guard++; }
+    challenge.list=list;
+
+    el.basicControls.classList.add('hidden'); el.ansArea.classList.remove('hidden'); el.endCh.classList.remove('hidden');
+    el.nextQ.classList.add('hidden'); el.checkMsg.textContent=''; el.ansInput.value='';
+    loadChallengeProblem(); buildProgress(); requestAnimationFrame(updateResponsiveSizes);
+  }
+
+  function endChallenge(){
+    saveDailyStats(1, challenge.correct);
+    challenge.active=false; el.basicControls.classList.remove('hidden'); el.ansArea.classList.add('hidden');
+    el.endCh.classList.add('hidden'); el.nextQ.classList.add('hidden'); el.checkMsg.textContent='';
+    const total=challenge.correct; el.hint.textContent=`チャレンジ終了！ 正解 ${total}/${QCOUNT}`; if(total>=3){ showStamp(); }
+  }
+  function loadChallengeProblem(){
+    const p=challenge.list[challenge.idx];
+    el.op.value=p.op; el.a.value=p.a; el.b.value=p.b; populate(); updateEq(p.a,p.b,p.op,null);
+    el.ansInput.value=''; el.checkMsg.textContent=''; el.nextQ.classList.add('hidden'); el.play.disabled=false;
+    if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+  }
+
+  async function checkAnswer(){
+    const p=challenge.list[challenge.idx]; const n=p.op==='+'?(p.a+p.b):(p.a-p.b);
+    const user=parseInt(el.ansInput.value||'NaN',10);
+    if(user===n){
+      el.checkMsg.textContent='⭕ せいかい！'; el.checkMsg.style.color='#16a34a';
+      if(!challenge.marks[challenge.idx]) challenge.correct++; challenge.marks[challenge.idx]='done'; buildProgress();
+      celebrate();
+      await onPlay(); if(!challenge.active) return;
+      if(challenge.idx<QCOUNT-1){ autoTimer=setTimeout(()=>{ nextQuestion(); }, 3000); } else { autoTimer=setTimeout(()=>{ endChallenge(); }, 3000); }
+    } else {
+      el.checkMsg.textContent='❌ ちがうよ'; el.checkMsg.style.color='#ef4444'; challenge.marks[challenge.idx]='fail'; buildProgress();
+    }
+  }
+  function nextQuestion(){
+    if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+    if(challenge.idx<QCOUNT-1){ challenge.idx++; loadChallengeProblem(); buildProgress(); } else { endChallenge(); }
+  }
+
+  /* 日別記録 localStorage */
+  const STATS_KEY='kids-math-stats-v1';
+  function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function loadStats(){ try{ return JSON.parse(localStorage.getItem(STATS_KEY)||'{}'); } catch(e){ return {}; } }
+  function saveStats(obj){ localStorage.setItem(STATS_KEY, JSON.stringify(obj)); }
+  function saveDailyStats(challengeCount, correctAdd){
+    const key=todayKey(), stats=loadStats(), cur=stats[key]||{challenges:0, correct:0};
+    cur.challenges += (challengeCount||0); cur.correct += (correctAdd||0); stats[key]=cur; saveStats(stats); updateDailyStatsView();
+  }
+  function updateDailyStatsView(){ const key=todayKey(), s=loadStats()[key]||{challenges:0, correct:0}; el.dailyStats.textContent=`今日: チャレンジ${s.challenges}回 / 正解${s.correct}問`; }
+
+  /* サウンド（WebAudio） */
+  const Audio=(()=>{ let ctx=null, enabled=true;
+    function ensure(){ if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; ctx=new AC(); } if(ctx&&ctx.state==='suspended') ctx.resume(); }
+    function setEnabled(on){ enabled=!!on; return enabled; } function isOn(){ return !!enabled; }
+    function osc(freq=440, dur=0.2, type='sine', vol=0.04, detune=0){ if(!enabled) return; ensure(); if(!ctx) return; const t=ctx.currentTime; const o=ctx.createOscillator(); const g=ctx.createGain();
+      o.type=type; o.frequency.value=freq; o.detune.value=detune; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+dur); o.start(t); o.stop(t+dur+0.05);
+    }
+    function chord(){ osc(880,0.34,'triangle',0.06,0); osc(1174.66,0.36,'triangle',0.05,0); osc(1567.98,0.4,'sine',0.05,0); }
+    function whoosh(){ osc(220,0.14,'sawtooth',0.02); osc(330,0.12,'sine',0.02); }
+    function pop(){ if(!enabled) return; ensure(); if(!ctx) return; const duration=0.08; const buffer=ctx.createBuffer(1, ctx.sampleRate*duration, ctx.sampleRate);
+      const data=buffer.getChannelData(0); for(let i=0;i<data.length;i++){ const t=i/data.length; data[i]=(Math.random()*2-1)*(1-t); }
+      const src=ctx.createBufferSource(); const g=ctx.createGain(); g.gain.value=0.07; src.buffer=buffer; src.connect(g); g.connect(ctx.destination); src.start();
+    }
+    return { ensure, chord, whoosh, pop, setEnabled, isOn };
+  })();
+
+  el.soundToggle.addEventListener('click', () => {
+    Audio.ensure(); const nowOn = !Audio.isOn(); Audio.setEnabled(nowOn);
+    el.soundToggle.textContent = nowOn ? '🔊 サウンド ON' : '🔇 サウンド OFF';
+  });
+
+  /* 祝演出 */
+  function celebrate(){
+    const ring=document.createElement('div'); ring.className='pulse';
+    const flash=document.createElement('div'); flash.className='flash';
+    el.workspace.appendChild(ring); el.workspace.appendChild(flash);
+    const layer=el.celebrate; layer.classList.remove('hidden');
+    const colors=['#ef4444','#f59e0b','#facc15','#22c55e','#38bdf8','#a855f7','#e91e63','#9ca3af'], count=90;
+    for(let i=0;i<count;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'vw';
+      c.style.background = colors[(i + Math.floor(Math.random()*colors.length)) % colors.length];
+      c.style.animationDuration = (700 + Math.random()*700) + 'ms';
+      c.style.transform = `translateY(-20vh) rotate(${Math.random()*360}deg)`; layer.appendChild(c);
+    }
+    Audio.chord();
+    setTimeout(()=>{ layer.classList.add('hidden'); layer.innerHTML=''; ring.remove(); flash.remove(); }, 1100);
+  }
+
+  /* スタンプ（30種：果物・動物） */
+  const STAMP_EMOJIS=['🍎','🍊','🍋','🍌','🍉','🍇','🍓','🍒','🍑','🍍','🥝','🥭','🍐','🍈','🫐','🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵'];
+  function showStamp(){
+    const e=STAMP_EMOJIS[Math.floor(Math.random()*STAMP_EMOJIS.length)];
+    el.stampEmoji.textContent=e; el.stamp.classList.remove('hidden');
+    const closer=()=>{ el.stamp.classList.add('hidden'); el.stamp.removeEventListener('click', closer); };
+    const timer=setTimeout(closer, 3000);
+    el.stamp.addEventListener('click', ()=>{ clearTimeout(timer); closer(); });
+    el.stampClose.addEventListener('click', ()=>{ clearTimeout(timer); closer(); }, { once:true });
+  }
+
+  /* 入力（答え欄：マイナス禁止） */
+  el.ansInput.addEventListener('keydown', (e)=>{ if(['-','+','e','E'].includes(e.key)) e.preventDefault(); });
+  el.ansInput.addEventListener('input', ()=>{ el.ansInput.value=(el.ansInput.value||'').replace(/[^\d]/g,''); });
+  el.ansInput.addEventListener('wheel', (e)=> e.preventDefault(), { passive:false });
+
+  /* イベント */
+  async function onPlay(){
+    if (animating) return;
+    const a=clamp(parseInt(el.a.value||0),0,20), b=clamp(parseInt(el.b.value||0),0,20), op=el.op.value;
+    populate(); animating=true; setDisabled(true);
+    try{
+      if(op==='+'){ await animatePlus(a,b); } else { if(b>a){ el.hint.textContent='※ 引き算は「数A ≥ 数B」を入力してください。'; } else { await animateMinus(a,b); } }
+    } finally {
+      animating=false; setDisabled(false); if(challenge.active){ el.nextQ.classList.remove('hidden'); }
+    }
+  }
+  function onReset(){ if(animating) return; clearBlocks(); populate(); }
+  function onRandom(){
+    if(animating) return;
+    const op=Math.random()<0.5?'+':'-'; let a,b;
+    if(op==='+'){ a=Math.floor(Math.random()*11); b=Math.floor(Math.random()*11); }
+    else { a=Math.floor(Math.random()*11)+9; b=Math.floor(Math.random()*(a+1)); }
+    el.op.value=op; el.a.value=a; el.b.value=b; populate();
+  }
+
+  el.play.addEventListener('click', ()=>{ Audio.ensure(); onPlay(); });
+  el.reset.addEventListener('click', ()=>{ Audio.ensure(); onReset(); });
+  el.random.addEventListener('click', ()=>{ Audio.ensure(); onRandom(); });
+  [el.a, el.b, el.op].forEach(inp => inp.addEventListener('change', populate));
+  el.speed.addEventListener('input', ()=>{ speedMul=parseFloat(el.speed.value); el.speedLabel.textContent=`x${speedMul.toFixed(2).replace(/\.00$/,'')}`; });
+
+  el.startCh.addEventListener('click', ()=>{ Audio.ensure(); startChallenge(); });
+  el.endCh.addEventListener('click', ()=>{ if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; } endChallenge(); });
+  el.checkBtn.addEventListener('click', ()=>{ Audio.ensure(); checkAnswer(); });
+  el.nextQ.addEventListener('click', nextQuestion);
+  el.modeSel.addEventListener('change', ()=>{ if(!challenge.active) {/* 設定のみ */} });
+
+  // 既定の出題モードは「足し算のみ」
+  el.modeSel.value='plus'; challenge.mode='plus';
+
+  populate(); updateDailyStatsView();
+})();
+</script>
+</body>
+</html>
