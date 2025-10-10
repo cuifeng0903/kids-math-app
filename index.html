@@ -1,8 +1,23 @@
+スレッドを開きました。未読メッセージは 1 件です。
+
+コンテンツへ
+Gmail でのスクリーン リーダーの使用
+2 / 17,439
+kids_math
+受信トレイ
+
+河野裕史 <cuifeng0903@gmail.com>
+添付ファイル
+10月10日(金) 21:56 (4 時間前)
+To 自分
+
+
+2 個の添付ファイル
+  •  Gmail でスキャン済み
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<!-- iPhone/iPad 最適化（Service Worker / Manifest は未使用） -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -12,9 +27,19 @@
   :root{
     --bg:#f7f8fb; --panel:#ffffff; --text:#1f2a44; --muted:#6b7280; --accent:#6c5ce7;
     --gap:10px; --block-size:64px; --dur:600ms;
+
+    /* 一桁の色 */
     --c-red:#ef4444; --c-orange:#f59e0b; --c-yellow:#facc15; --c-green:#22c55e;
-    --c-aqua:#38bdf8; --c-purple:#a855f7; --c-lilac:#c084fc; --c-hotpink:#e91e63; --c-gray:#9ca3af;
-    --ten-border:#ef4444; --ten-bg:#ffffff;
+    --c-aqua:#38bdf8; --c-purple:#a855f7; --c-lilac:#c084fc; --c-hotpink:#e91e63;
+    --c-gray:#9ca3af;            /* 標準の灰 */
+    --c-gray-light:#e5e7eb;      /* 薄い灰 */
+    --c-gray-dark:#6b7280;       /* 濃い灰 */
+
+    /* まとまり（10/20） */
+    --ten-border:#ef4444;   --ten-bg:#ffffff;
+    --twenty-border:#f59e0b;--twenty-bg:#fffaf0;
+
+    /* 祝エフェクト */
     --flash:#fff6;
   }
   *{box-sizing:border-box}
@@ -67,16 +92,15 @@
   .eq-num{ min-width:40px; text-align:center; font-weight:700; }
   .eq-op, .eq-eq{ opacity:.7; font-weight:700; }
 
-  /* ★ 縦並びレイアウト（数A → 数B → こたえ） */
+  /* 縦並び（数A → 数B → こたえ） */
   .boards{
     display:grid; grid-template-columns: 1fr; gap:14px;
     align-items:start; justify-items:stretch;
   }
   .board{ width:100%; background:white; border:1px solid #edf2f7; border-radius:12px; padding:10px; }
   .board h3{ margin:0 0 8px; font-size:14px; color:var(--muted); text-align:left; }
-  .sep{ display:none !important; }
 
-  /* 最大横10列（横スクロールなし） */
+  /* 横10列固定・自動縮小（横スクロールなし） */
   .blocks{
     display:grid;
     grid-template-columns: repeat(10, var(--block-size));
@@ -85,33 +109,50 @@
     justify-content:flex-start; align-content:start; width:100%;
   }
 
-  /* ユニット */
-  .block{ width:var(--block-size); height:var(--block-size); border-radius:12px; box-shadow: 0 3px 8px rgba(0,0,0,.08); transform: translateZ(0); position:relative; }
-  .block.one{ border:none; }
-  .block.tenu{ background: var(--ten-bg); border: 4px solid var(--ten-border); }
+  /* ユニット（小ブロック＝値1） */
+  .block{
+    width:var(--block-size); height:var(--block-size);
+    border-radius:12px; box-shadow: 0 3px 8px rgba(0,0,0,.08); position:relative;
+  }
+  /* 20：薄オレンジ＋太オレンジ枠（1単位×20個で20を表現） */
+  .block.twentyu{ background: var(--twenty-bg); border: 6px solid var(--twenty-border); }
+  /* 10：白＋赤枠（枠線太さを20と同じ6pxに統一） */
+  .block.tenu{ background: var(--ten-bg); border: 6px solid var(--ten-border); }
 
-  /* 色（1〜9） */
+  /* 一桁色 */
   .c-red{ background: var(--c-red); } .c-orange{ background: var(--c-orange); } .c-yellow{ background: var(--c-yellow); }
   .c-green{ background: var(--c-green); } .c-aqua{ background: var(--c-aqua); } .c-purple{ background: var(--c-purple); }
-  .c-lilac{ background: var(--c-lilac); } .c-hotpink{ background: var(--c-hotpink); } .c-gray{ background: var(--c-gray); }
+  .c-lilac{ background: var(--c-lilac); } .c-hotpink{ background: var(--c-hotpink); }
+  .c-gray{ background: var(--c-gray); }             /* 標準の灰 */
+  .c-graylight{ background: var(--c-gray-light); } /* 薄い灰 */
+  .c-graydark{ background: var(--c-gray-dark); }   /* 濃い灰 */
 
   .hint{ margin-top:10px; color:var(--muted); font-size:14px; text-align:center; }
 
   /* 飛行クローン・消滅 */
-  .fly-clone{ position:fixed; z-index:9999; border-radius:12px; box-shadow: 0 3px 10px rgba(0,0,0,.2); will-change: transform, opacity; }
+  .fly-clone{
+    position:fixed; z-index:9999; border-radius:12px; box-shadow: 0 3px 10px rgba(0,0,0,.2);
+    will-change: transform, opacity;
+  }
   .poof{ animation: poof .35s ease forwards; }
   @keyframes poof{ 0% { transform: scale(1); opacity:1; } 100%{ transform: scale(.3); opacity:0; filter: blur(1px); } }
   .cross{ position:relative; overflow:hidden; }
-  .cross::before, .cross::after{ content:""; position:absolute; left:8px; right:8px; height:6px; background:rgba(255,255,255,.9); top:calc(50% - 3px); border-radius:6px; transform:rotate(45deg); }
+  .cross::before, .cross::after{
+    content:""; position:absolute; left:8px; right:8px; height:6px; background:rgba(255,255,255,.9); top:calc(50% - 3px);
+    border-radius:6px; transform:rotate(45deg);
+  }
   .cross::after{ transform:rotate(-45deg); }
 
-  /* ===== チャレンジ UI ===== */
+  /* チャレンジ UI */
   .challenge-bar{
     display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px;
     border-top:1px dashed #e5e7eb; padding-top:10px;
   }
   .progress{ display:flex; gap:6px; align-items:center; }
-  .dot{ width:18px; height:18px; border-radius:50%; background:#e5e7eb; border:2px solid #c7c9d1; }
+  .dot{
+    width:18px; height:18px; border-radius:50%;
+    background:#e5e7eb; border:2px solid #c7c9d1;
+  }
   .dot.done{ background:#22c55e; border-color:#16a34a; }
   .dot.fail{ background:#ef4444; border-color:#dc2626; }
   .score{ color:var(--muted); font-weight:700; }
@@ -119,25 +160,40 @@
   #ansInput{ width:110px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:10px; font-size:18px; text-align:center; }
   #checkMsg{ min-width:110px; font-weight:800; letter-spacing:.02em; }
   #dailyStats{ color:var(--muted); font-size:13px; margin-left:auto; }
+
   .hidden{ display:none !important; }
 
-  /* ===== 正解派手エフェクト ===== */
+  /* 祝エフェクト（噴水型：下部中央→上へ） */
   .celebrate{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:9998; }
-  .confetti{ position:absolute; width:10px; height:14px; opacity:0.9; will-change: transform, opacity; animation: confetti-fall 900ms ease-out forwards; }
-  @keyframes confetti-fall{ 0% { transform: translateY(-20vh) rotate(0deg); opacity:0; } 10%{ opacity:1; } 100%{ transform: translateY(110vh) rotate(720deg); opacity:0; } }
+  .confetti{
+    position:fixed; bottom:0; left:50vw;
+    width:10px; height:14px; opacity:0.95; border-radius:2px;
+    animation: confetti-up 1s ease-out forwards;
+  }
+  @keyframes confetti-up{
+    0%   { transform: translate(0, 0) rotate(0deg);   opacity:0.95; }
+    100% { transform: translate(var(--dx, 0vw), -70vh) rotate(720deg); opacity:0; }
+  }
   .pulse{ position:absolute; inset:0; pointer-events:none; z-index:9997; }
-  .pulse::before{ content:""; position:absolute; left:50%; top:50%; width:20vmin; height:20vmin; border-radius:50%; transform: translate(-50%,-50%); background: radial-gradient(circle, #fff7 0%, transparent 60%); animation: pulse-ring 900ms ease-out forwards; }
-  @keyframes pulse-ring{ 0% { transform: translate(-50%,-50%) scale(.6); opacity:.9; } 100%{ transform: translate(-50%,-50%) scale(2.4); opacity:0; } }
+  .pulse::before{
+    content:""; position:absolute; left:50%; top:50%; width:20vmin; height:20vmin;
+    border-radius:50%; transform: translate(-50%,-50%);
+    background: radial-gradient(circle, #fff7 0%, transparent 60%);
+    animation: pulse-ring 900ms ease-out forwards;
+  }
+  @keyframes pulse-ring{
+    0% { transform: translate(-50%,-50%) scale(.6); opacity:.9; }
+    100%{ transform: translate(-50%,-50%) scale(2.4); opacity:0; }
+  }
   .flash{ position:absolute; inset:0; background: var(--flash); animation: flashout 300ms ease-out forwards; }
   @keyframes flashout{ from{ opacity:1; } to{ opacity:0; } }
 
-  /* ===== スタンプ ===== */
+  /* スタンプ（モーダル生成時にクラス適用） */
   .stamp{
     position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
     background: rgba(0,0,0,.18); z-index:10000; pointer-events:auto;
     padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom);
   }
-  .stamp.hidden{ display:none; }
   .stamp-card{
     background:white; border-radius:24px; padding:20px 26px; text-align:center;
     box-shadow: 0 18px 50px rgba(0,0,0,.22);
@@ -170,10 +226,10 @@
       </select>
 
       <label>数A</label>
-      <input id="a" type="number" min="0" max="20" value="13" inputmode="numeric" pattern="[0-9]*" />
+      <input id="a" type="number" min="0" max="99" value="13" inputmode="numeric" pattern="[0-9]*" />
 
       <label>数B</label>
-      <input id="b" type="number" min="0" max="20" value="7" inputmode="numeric" pattern="[0-9]*" />
+      <input id="b" type="number" min="0" max="99" value="7" inputmode="numeric" pattern="[0-9]*" />
 
       <button id="play" class="primary">▶ 再生</button>
       <button id="reset">↺ リセット</button>
@@ -194,6 +250,13 @@
         <option value="plus" selected>足し算のみ</option>
         <option value="minus">引き算のみ</option>
         <option value="mixed">足し算と引き算</option>
+      </select>
+
+      <label for="levelSel">難易度</label>
+      <select id="levelSel" aria-label="難易度">
+        <option value="easy" selected>かんたん</option>
+        <option value="normal">ふつう</option>
+        <option value="hard">むずかしい</option>
       </select>
 
       <button id="startChallenge">🏁 チャレンジ開始（5問）</button>
@@ -220,7 +283,7 @@
       <span class="eq-num" id="eqAns">？</span>
     </div>
 
-    <!-- ★ 縦並び：数A → 数B → こたえ -->
+    <!-- 縦並び：数A → 数B → こたえ -->
     <div class="boards" id="boards">
       <div class="board" aria-label="数Aのブロック">
         <h3>数A</h3>
@@ -242,57 +305,64 @@
   </section>
 </main>
 
-<!-- 正解祝いオーバーレイ -->
+<!-- 祝オーバーレイ -->
 <div id="celebrate" class="celebrate hidden"></div>
-
-<!-- ごほうびスタンプ -->
-<div id="stamp" class="stamp hidden" role="dialog" aria-modal="true">
-  <div class="stamp-card">
-    <div class="stamp-emoji" id="stampEmoji">🍎</div>
-    <div class="stamp-title">スタンプGET！</div>
-    <div class="stamp-sub">よくがんばったね</div>
-    <button class="stamp-close" id="stampClose">OK</button>
-  </div>
-</div>
 
 <script>
 (() => {
   const qs = s => document.querySelector(s);
-  const qsa = s => Array.from(document.querySelectorAll(s));
 
   const el = {
     op: qs('#op'), a: qs('#a'), b: qs('#b'),
-    play: qs('#play'), reset: qs('#reset'), random: qs('#random'),
-    speed: qs('#speed'), speedLabel: qs('#speedLabel'),
     left: qs('#left'), right: qs('#right'), result: qs('#result'),
     eqA: qs('#eqA'), eqB: qs('#eqB'), eqOp: qs('#eqOp'), eqAns: qs('#eqAns'),
     hint: qs('#hint'), workspace: qs('#workspace'),
-
+    play: qs('#play'), reset: qs('#reset'), random: qs('#random'),
+    speed: qs('#speed'), speedLabel: qs('#speedLabel'),
     soundToggle: qs('#soundToggle'),
 
-    basicControls: qs('#basicControls'),
+    // チャレンジ
+    modeSel: qs('#modeSel'), levelSel: qs('#levelSel'),
     startCh: qs('#startChallenge'), endCh: qs('#endChallenge'),
     ansArea: qs('#ansArea'), ansInput: qs('#ansInput'),
     checkBtn: qs('#checkAnswer'), checkMsg: qs('#checkMsg'),
-    nextQ: qs('#nextQ'), progress: qs('#progress'),
-    score: qs('#score'), modeSel: qs('#modeSel'),
+    nextQ: qs('#nextQ'), progress: qs('#progress'), score: qs('#score'),
     dailyStats: qs('#dailyStats'),
 
+    // 基本UI
+    basicControls: qs('#basicControls'),
+
+    // 祝
     celebrate: qs('#celebrate'),
-    stamp: qs('#stamp'), stampEmoji: qs('#stampEmoji'), stampClose: qs('#stampClose'),
   };
 
+  /* ========= 共通ユーティリティ ========= */
   let animating = false;
-  let speedMul = parseFloat(el.speed.value);
+  let speedMul = parseFloat(el.speed.value || '1');
   let autoTimer = null; // 自動遷移タイマー
+
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
   const ms = (base) => base / speedMul;
 
-  function updateEq(a, b, op, ans=null){ el.eqA.textContent=a; el.eqB.textContent=b; el.eqOp.textContent= op==='+'?'＋':'−'; el.eqAns.textContent= ans===null?'？':ans; }
-  function setDisabled(dis){ [el.op, el.a, el.b, el.random, el.reset].forEach(x=> x.disabled=dis); el.play.disabled = dis; }
+  function updateEq(a, b, op, ans=null){
+    el.eqA.textContent = a;
+    el.eqB.textContent = b;
+    el.eqOp.textContent = (op === '+') ? '＋' : '−';
+    el.eqAns.textContent = (ans === null ? '？' : ans);
+  }
+  function setDisabled(dis){
+    [el.op, el.a, el.b, el.random, el.reset].forEach(x=> x.disabled = dis);
+    el.play.disabled = dis;
+  }
   function clearBlocks(){ el.left.innerHTML=''; el.right.innerHTML=''; el.result.innerHTML=''; }
 
-  const COLOR_CLASS = { red:'c-red', orange:'c-orange', yellow:'c-yellow', green:'c-green', aqua:'c-aqua', purple:'c-purple', lilac:'c-lilac', hotpink:'c-hotpink', gray:'c-gray' };
+  /* ========= 一桁色配列 ========= */
+  const COLOR_CLASS = {
+    red:'c-red', orange:'c-orange', yellow:'c-yellow',
+    green:'c-green', aqua:'c-aqua', purple:'c-purple',
+    lilac:'c-lilac', hotpink:'c-hotpink',
+    gray:'c-gray', graylight:'c-graylight', graydark:'c-graydark'
+  };
   function onesColors(k){
     switch(k){
       case 0: return [];
@@ -304,35 +374,79 @@
       case 6: return Array(6).fill(COLOR_CLASS.purple);
       case 7: return [COLOR_CLASS.red, COLOR_CLASS.orange, COLOR_CLASS.yellow, COLOR_CLASS.green, COLOR_CLASS.aqua, COLOR_CLASS.purple, COLOR_CLASS.lilac];
       case 8: return Array(8).fill(COLOR_CLASS.hotpink);
-      case 9: return Array(9).fill(COLOR_CLASS.gray);
+      case 9: // ★ 薄灰3 → 灰3 → 濃灰3
+        return [
+          COLOR_CLASS.graylight, COLOR_CLASS.graylight, COLOR_CLASS.graylight,
+          COLOR_CLASS.gray,      COLOR_CLASS.gray,      COLOR_CLASS.gray,
+          COLOR_CLASS.graydark,  COLOR_CLASS.graydark,  COLOR_CLASS.graydark
+        ];
       default: return [];
     }
   }
 
-  function createTenUnit(role='left'){ const d=document.createElement('div'); d.className=`block tenu ${role}`; d.dataset.kind='tenu'; return d; }
-  function createOneUnit(colorClass, role='left'){ const d=document.createElement('div'); d.className=`block one ${colorClass} ${role}`; d.dataset.kind='one'; return d; }
+  /* ========= ユニット生成 ========= */
+  function createTwentyUnit(role='left'){
+    const d = document.createElement('div');
+    d.className = `block twentyu ${role}`;
+    d.dataset.kind = 'twentyu'; // 値1（見た目は20まとまり）×20個で20を表現
+    return d;
+  }
+  function createTenUnit(role='left'){
+    const d = document.createElement('div');
+    d.className = `block tenu ${role}`;
+    d.dataset.kind = 'tenu'; // 値1（見た目は10まとまり）×10個で10を表現
+    return d;
+  }
+  function createOneUnit(colorClass, role='left'){
+    const d = document.createElement('div');
+    d.className = `block one ${colorClass} ${role}`;
+    d.dataset.kind = 'one'; // 値1
+    return d;
+  }
+
+  /**
+   * n を「20まとまり（20×1を20個）→10まとまり（10×1を10個）→一桁」へ分解
+   * ※ 各要素は値1なので、DOM子要素数の合計＝n
+   */
   function renderValue(container, n, role){
-    const tens=Math.floor(n/10), ones=n%10;
-    for(let i=0;i<tens;i++){ for(let j=0;j<10;j++){ container.appendChild(createTenUnit(role)); } }
-    for(const cls of onesColors(ones)){ container.appendChild(createOneUnit(cls, role)); }
+    const twenties = Math.floor(n / 20);
+    let remain = n % 20;
+    for (let i=0; i<twenties; i++){
+      for (let j=0; j<20; j++){
+        container.appendChild(createTwentyUnit(role));
+      }
+    }
+    const tens = Math.floor(remain / 10);
+    remain = remain % 10;
+    for (let i=0; i<tens; i++){
+      for (let j=0; j<10; j++){
+        container.appendChild(createTenUnit(role));
+      }
+    }
+    for (const cls of onesColors(remain)){
+      container.appendChild(createOneUnit(cls, role));
+    }
   }
 
   function populate(){
-    const a=clamp(parseInt(el.a.value||0),0,20), b=clamp(parseInt(el.b.value||0),0,20);
-    el.a.value=a; el.b.value=b;
+    const a = clamp(parseInt(el.a.value || '0', 10), 0, 99);
+    const b = clamp(parseInt(el.b.value || '0', 10), 0, 99);
+    el.a.value = a; el.b.value = b;
     clearBlocks();
-    renderValue(el.left, a, 'left'); renderValue(el.right, b, 'right');
-    updateEq(a,b,el.op.value,null); el.hint.textContent='「再生」を押すとブロックが動きます。';
+    renderValue(el.left, a, 'left');
+    renderValue(el.right, b, 'right');
+    updateEq(a, b, el.op.value, null);
+    el.hint.textContent = '「再生」を押すとブロックが動きます。';
     requestAnimationFrame(updateResponsiveSizes);
   }
 
-  /* Responsive: 幅に必ず収める（横10列） */
+  /* ========= 自動縮小（横10列に収める） ========= */
   function updateResponsiveSizes(){
-    const wraps=[el.left, el.right, el.result];
-    const widths=wraps.map(w => (w && (w.clientWidth || w.getBoundingClientRect().width)) || 0).filter(w => w>0);
+    const wraps = [el.left, el.right, el.result];
+    const widths = wraps.map(w => (w && (w.clientWidth || w.getBoundingClientRect().width)) || 0).filter(w => w>0);
     const minW = widths.length ? Math.min(...widths) : Math.max(320, el.workspace.clientWidth);
     let gap = clamp(Math.round(minW * 0.02), 3, 12);
-    let bs = Math.floor((minW - 9 * gap) / 10);
+    let bs  = Math.floor((minW - 9 * gap) / 10);
     if (bs < 10){ gap = 2; bs = Math.floor((minW - 9 * gap) / 10); }
     bs = Math.max(10, Math.min(bs, 96));
     document.documentElement.style.setProperty('--gap', `${gap}px`);
@@ -340,216 +454,421 @@
   }
   window.addEventListener('resize', () => requestAnimationFrame(updateResponsiveSizes));
 
-  /* アニメ基盤 */
+  /* ========= アニメ基盤 ========= */
   function flipMove(elm, newParent){
     return new Promise(resolve => {
-      const start=elm.getBoundingClientRect(); newParent.appendChild(elm); const end=elm.getBoundingClientRect();
-      const dx=start.left-end.left, dy=start.top-end.top;
-      elm.style.transition='none'; elm.style.transform=`translate(${dx}px, ${dy}px)`;
-      requestAnimationFrame(()=>{
-        elm.style.transition=`transform ${ms(600)}ms ease`; elm.style.transform='translate(0,0)';
-        const done=()=>{ elm.removeEventListener('transitionend', done); elm.style.transition=''; resolve(); };
+      const start = elm.getBoundingClientRect();
+      newParent.appendChild(elm);
+      const end = elm.getBoundingClientRect();
+      const dx = start.left - end.left;
+      const dy = start.top - end.top;
+      elm.style.transition = 'none';
+      elm.style.transform = `translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(() => {
+        elm.style.transition = `transform ${ms(600)}ms ease`;
+        elm.style.transform = 'translate(0,0)';
+        const done = () => { elm.removeEventListener('transitionend', done); elm.style.transition=''; resolve(); };
         elm.addEventListener('transitionend', done, { once:true });
       });
     });
   }
+
   function flyClone(fromEl, toRect){
     return new Promise(resolve => {
-      const r1=fromEl.getBoundingClientRect(), clone=fromEl.cloneNode(true);
-      clone.classList.add('fly-clone'); clone.style.width=`${r1.width}px`; clone.style.height=`${r1.height}px`;
-      clone.style.left=`${r1.left}px`; clone.style.top=`${r1.top}px`;
-      clone.style.transition=`transform ${ms(500)}ms ease`; clone.style.transform='translate(0,0)'; document.body.appendChild(clone);
-      requestAnimationFrame(()=>{ const dx=(toRect.left-r1.left), dy=(toRect.top-r1.top); clone.style.transform=`translate(${dx}px, ${dy}px)`; });
+      const r1 = fromEl.getBoundingClientRect();
+      const clone = fromEl.cloneNode(true);
+      clone.classList.add('fly-clone');
+      clone.style.width = `${r1.width}px`;
+      clone.style.height = `${r1.height}px`;
+      clone.style.left = `${r1.left}px`;
+      clone.style.top = `${r1.top}px`;
+      clone.style.transition = `transform ${ms(500)}ms ease`;
+      clone.style.transform = 'translate(0,0)';
+      document.body.appendChild(clone);
+      requestAnimationFrame(()=>{
+        const dx = (toRect.left - r1.left);
+        const dy = (toRect.top - r1.top);
+        clone.style.transform = `translate(${dx}px, ${dy}px)`;
+      });
       clone.addEventListener('transitionend', () => resolve(clone), { once:true });
     });
   }
+
   function flyAndPoofUnit(fromEl, toEl){
     return new Promise(async resolve => {
-      const toRect=toEl.getBoundingClientRect(), clone=await flyClone(fromEl, toRect);
-      toEl.classList.add('cross'); clone.classList.add('poof'); fromEl.remove(); Audio.pop();
-      setTimeout(()=>{ toEl.classList.add('poof'); setTimeout(()=>{ toEl.remove(); clone.remove(); resolve(); }, ms(320)); }, ms(80));
+      const toRect = toEl.getBoundingClientRect();
+      const clone = await flyClone(fromEl, toRect);
+      toEl.classList.add('cross');
+      clone.classList.add('poof');
+      fromEl.remove();
+      Audio.pop();
+      setTimeout(()=>{
+        toEl.classList.add('poof');
+        setTimeout(()=>{
+          toEl.remove();
+          clone.remove();
+          resolve();
+        }, ms(320));
+      }, ms(80));
     });
   }
 
-  async function animatePlus(a,b){
-    el.hint.textContent='たしているよ…'; Audio.whoosh();
+  /* ========= アニメーション ========= */
+  async function animatePlus(a, b){
+    el.hint.textContent = 'たしているよ…';
+    Audio.whoosh();
     for (const blk of Array.from(el.left.children)){ await flipMove(blk, el.result); }
     for (const blk of Array.from(el.right.children)){ await flipMove(blk, el.result); }
-    const n=a+b; await new Promise(r=> setTimeout(r, ms(100))); el.result.innerHTML=''; renderValue(el.result, n, 'result');
-    updateEq(a,b,'+',n); el.hint.textContent='できた！ もとのブロックも見てみよう。'; updateResponsiveSizes(); restoreSides(a,b);
+    const n = a + b;
+    await new Promise(r=> setTimeout(r, ms(100)));
+    el.result.innerHTML = '';
+    renderValue(el.result, n, 'result');
+    updateEq(a, b, '+', n);
+    el.hint.textContent = 'できた！ もとのブロックも見てみよう。';
+    updateResponsiveSizes();
+    restoreSides(a, b);
   }
-  async function animateMinus(a,b){
-    if (b>a){ el.hint.textContent='※ 引き算は「数A ≥ 数B」を入力してください。'; return; }
-    el.hint.textContent='ひいているよ…（右端から消えるよ）';
-    for(let i=0;i<b;i++){ const fromRight=el.right.lastElementChild, targetLeft=el.left.lastElementChild; if(!fromRight||!targetLeft) break; await flyAndPoofUnit(fromRight, targetLeft); }
+
+  async function animateMinus(a, b){
+    if (b > a){ el.hint.textContent = '※ 引き算は「数A ≥ 数B」を入力してください。'; return; }
+    el.hint.textContent = 'ひいているよ…（右端から消えるよ）';
+    for (let i=0; i<b; i++){
+      const fromRight = el.right.lastElementChild;
+      const targetLeft = el.left.lastElementChild;
+      if (!fromRight || !targetLeft) break;
+      await flyAndPoofUnit(fromRight, targetLeft);
+    }
     for (const blk of Array.from(el.left.children)){ await flipMove(blk, el.result); }
-    const n=a-b; await new Promise(r=> setTimeout(r, ms(100))); el.result.innerHTML=''; renderValue(el.result, n, 'result');
-    updateEq(a,b,'-',n); el.hint.textContent='できた！ もとのブロックも見てみよう。'; updateResponsiveSizes(); restoreSides(a,b);
+    const n = a - b;
+    await new Promise(r=> setTimeout(r, ms(100)));
+    el.result.innerHTML = '';
+    renderValue(el.result, n, 'result');
+    updateEq(a, b, '-', n);
+    el.hint.textContent = 'できた！ もとのブロックも見てみよう。';
+    updateResponsiveSizes();
+    restoreSides(a, b);
   }
-  function restoreSides(a,b){ el.left.innerHTML=''; el.right.innerHTML=''; renderValue(el.left,a,'left'); renderValue(el.right,b,'right'); updateResponsiveSizes(); }
 
-  /* チャレンジ（5問） */
-  const QCOUNT=5;
-  const challenge={ active:false, list:[], idx:0, correct:0, marks:[], mode:'plus' };
-  function buildProgress(){ el.progress.innerHTML=''; for(let i=0;i<QCOUNT;i++){ const d=document.createElement('div'); d.className='dot'+(challenge.marks[i]?' '+challenge.marks[i]:''); el.progress.appendChild(d); } el.score.textContent=`正解 ${challenge.correct}/${QCOUNT}`; }
+  function restoreSides(a, b){
+    el.left.innerHTML = '';
+    el.right.innerHTML = '';
+    renderValue(el.left, a, 'left');
+    renderValue(el.right, b, 'right');
+    updateResponsiveSizes();
+  }
 
-  /* ★ ユニークキー（足し算はA/B入替も同一扱い） */
-  function problemKey(p){ if(p.op==='+'){ const x=Math.min(p.a,p.b), y=Math.max(p.a,p.b); return `+:${x}:${y}`; } return `-:${p.a}:${p.b}`; }
+  /* ========= チャレンジ ========= */
+  const QCOUNT = 5;
+  const challenge = {
+    active:false, list:[], idx:0, correct:0, marks:[],
+    mode:'plus', level:'easy'
+  };
 
-  /* ★ 生成（チャレンジ：A/Bともに0は出さない） */
+  function buildProgress(){
+    el.progress.innerHTML = '';
+    for (let i=0; i<QCOUNT; i++){
+      const d = document.createElement('div');
+      d.className = 'dot' + (challenge.marks[i] ? ' '+challenge.marks[i] : '');
+      el.progress.appendChild(d);
+    }
+    el.score.textContent = `正解 ${challenge.correct}/${QCOUNT}`;
+  }
+
+  function problemKey(p){
+    if (p.op === '+'){
+      const x = Math.min(p.a, p.b), y = Math.max(p.a, p.b);
+      return `+:${x}:${y}`;
+    }
+    return `-:${p.a}:${p.b}`;
+  }
+
+  function rInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+  function rangesFor(level){
+    switch(level){
+      case 'easy':   return { a:[1,5],  b:[1,5]  };
+      case 'normal': return { a:[5,10], b:[1,5]  };
+      case 'hard':   return { a:[1,19], b:[1,10] };
+      default:       return { a:[1,5],  b:[1,5]  };
+    }
+  }
   function genProblem(){
     const plus = challenge.mode==='plus' ? true : (challenge.mode==='minus' ? false : Math.random()<0.5);
-    let a,b;
-    if(plus){ a=Math.floor(Math.random()*10)+1; b=Math.floor(Math.random()*10)+1; }
-    else { a=Math.floor(Math.random()*19)+2; b=Math.floor(Math.random()*a)+1; }
+    const {a:[aMin,aMax], b:[bMin,bMax]} = rangesFor(challenge.level);
+    let a, b;
+    if (plus){
+      a = rInt(aMin, aMax);
+      b = rInt(bMin, bMax);
+    } else {
+      a = rInt(aMin, aMax);
+      const bUpper = Math.min(bMax, a);
+      const bLower = Math.min(bMin, bUpper);
+      b = rInt(bLower, bUpper);
+    }
     return {op: plus?'+':'-', a, b};
   }
 
-  /* ★ チャレンジ開始：ユニーク5問を用意（重複/入替重複なし） */
   function startChallenge(){
     challenge.mode = el.modeSel.value || 'plus';
-    challenge.active=true; challenge.idx=0; challenge.correct=0; challenge.marks=Array(QCOUNT).fill('');
-    const seen=new Set(), list=[]; let guard=0; const MAX_GUARD=2000;
-    while(list.length<QCOUNT && guard<MAX_GUARD){ const p=genProblem(); const key=problemKey(p); if(!seen.has(key)){ seen.add(key); list.push(p); } guard++; }
-    challenge.list=list;
+    challenge.level = el.levelSel.value || 'easy';
+    challenge.active = true;
+    challenge.idx = 0;
+    challenge.correct = 0;
+    challenge.marks = Array(QCOUNT).fill('');
+    const seen = new Set();
+    const list = [];
+    let guard = 0;
+    const MAX_GUARD = 5000;
+    while (list.length < QCOUNT && guard < MAX_GUARD){
+      const p = genProblem();
+      const key = problemKey(p);
+      if (!seen.has(key)){ seen.add(key); list.push(p); }
+      guard++;
+    }
+    challenge.list = list;
 
-    el.basicControls.classList.add('hidden'); el.ansArea.classList.remove('hidden'); el.endCh.classList.remove('hidden');
-    el.nextQ.classList.add('hidden'); el.checkMsg.textContent=''; el.ansInput.value='';
-    loadChallengeProblem(); buildProgress(); requestAnimationFrame(updateResponsiveSizes);
+    el.basicControls.classList.add('hidden');
+    el.ansArea.classList.remove('hidden');
+    el.endCh.classList.remove('hidden');
+    el.nextQ.classList.add('hidden');
+    el.checkMsg.textContent = '';
+    el.ansInput.value = '';
+
+    loadChallengeProblem();
+    buildProgress();
+    requestAnimationFrame(updateResponsiveSizes);
   }
 
   function endChallenge(){
     saveDailyStats(1, challenge.correct);
-    challenge.active=false; el.basicControls.classList.remove('hidden'); el.ansArea.classList.add('hidden');
-    el.endCh.classList.add('hidden'); el.nextQ.classList.add('hidden'); el.checkMsg.textContent='';
-    const total=challenge.correct; el.hint.textContent=`チャレンジ終了！ 正解 ${total}/${QCOUNT}`; if(total>=3){ showStamp(); }
+    challenge.active = false;
+    el.basicControls.classList.remove('hidden');
+    el.ansArea.classList.add('hidden');
+    el.endCh.classList.add('hidden');
+    el.nextQ.classList.add('hidden');
+    el.checkMsg.textContent = '';
+    const total = challenge.correct;
+    el.hint.textContent = `チャレンジ終了！ 正解 ${total}/${QCOUNT}`;
+    if (total >= 3){ showStamp(); }
   }
+
   function loadChallengeProblem(){
-    const p=challenge.list[challenge.idx];
-    el.op.value=p.op; el.a.value=p.a; el.b.value=p.b; populate(); updateEq(p.a,p.b,p.op,null);
-    el.ansInput.value=''; el.checkMsg.textContent=''; el.nextQ.classList.add('hidden'); el.play.disabled=false;
-    if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+    const p = challenge.list[challenge.idx];
+    el.op.value = p.op;
+    el.a.value = p.a;
+    el.b.value = p.b;
+    populate();
+    updateEq(p.a, p.b, p.op, null);
+    el.ansInput.value = '';
+    el.checkMsg.textContent = '';
+    el.nextQ.classList.add('hidden');
+    el.play.disabled = false;
+    if (autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
   }
 
-  async function checkAnswer(){
-    const p=challenge.list[challenge.idx]; const n=p.op==='+'?(p.a+p.b):(p.a-p.b);
-    const user=parseInt(el.ansInput.value||'NaN',10);
-    if(user===n){
-      el.checkMsg.textContent='⭕ せいかい！'; el.checkMsg.style.color='#16a34a';
-      if(!challenge.marks[challenge.idx]) challenge.correct++; challenge.marks[challenge.idx]='done'; buildProgress();
-      celebrate();
-      await onPlay(); if(!challenge.active) return;
-      if(challenge.idx<QCOUNT-1){ autoTimer=setTimeout(()=>{ nextQuestion(); }, 3000); } else { autoTimer=setTimeout(()=>{ endChallenge(); }, 3000); }
-    } else {
-      el.checkMsg.textContent='❌ ちがうよ'; el.checkMsg.style.color='#ef4444'; challenge.marks[challenge.idx]='fail'; buildProgress();
+  /* ========= 祝・サウンド ========= */
+  function celebrate(){
+    // 紙吹雪（下部中央→上へ扇状）
+    const layer = el.celebrate;
+    layer.classList.remove('hidden');
+    const colors = ['#ef4444','#f59e0b','#facc15','#22c55e','#38bdf8','#a855f7','#e91e63','#9ca3af'];
+    const count = 100;
+    for (let i=0;i<count;i++){
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.background = colors[i % colors.length];
+      c.style.setProperty('--dx', (Math.random()*80 - 40) + 'vw');
+      c.style.animationDuration = (700 + Math.random()*900) + 'ms';
+      c.style.animationDelay = (Math.random()*120) + 'ms';
+      layer.appendChild(c);
     }
-  }
-  function nextQuestion(){
-    if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
-    if(challenge.idx<QCOUNT-1){ challenge.idx++; loadChallengeProblem(); buildProgress(); } else { endChallenge(); }
+    Audio.chord();
+    setTimeout(()=>{ layer.classList.add('hidden'); layer.innerHTML=''; }, 1300);
   }
 
-  /* 日別記録 localStorage */
-  const STATS_KEY='kids-math-stats-v1';
-  function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
-  function loadStats(){ try{ return JSON.parse(localStorage.getItem(STATS_KEY)||'{}'); } catch(e){ return {}; } }
-  function saveStats(obj){ localStorage.setItem(STATS_KEY, JSON.stringify(obj)); }
-  function saveDailyStats(challengeCount, correctAdd){
-    const key=todayKey(), stats=loadStats(), cur=stats[key]||{challenges:0, correct:0};
-    cur.challenges += (challengeCount||0); cur.correct += (correctAdd||0); stats[key]=cur; saveStats(stats); updateDailyStatsView();
+  const STAMP_EMOJIS = [
+    '🍎','🍊','🍋','🍌','🍉','🍇','🍓','🍒','🍑','🍍',
+    '🥝','🥭','🍐','🍈','🫐',
+    '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯',
+    '🦁','🐮','🐷','🐸','🐵'
+  ];
+  function showStamp(){
+    const e = STAMP_EMOJIS[Math.floor(Math.random()*STAMP_EMOJIS.length)];
+    const stamp = document.createElement('div');
+    stamp.className = 'stamp';
+    stamp.innerHTML = `
+      <div class="stamp-card">
+        <div class="stamp-emoji">${e}</div>
+        <div class="stamp-title">スタンプGET！</div>
+        <div class="stamp-sub">よくがんばったね</div>
+        <button class="stamp-close">OK</button>
+      </div>`;
+    document.body.appendChild(stamp);
+    const closer = () => { stamp.removeEventListener('click', closer); stamp.remove(); };
+    const timer = setTimeout(closer, 3000);
+    stamp.addEventListener('click', () => { clearTimeout(timer); closer(); });
   }
-  function updateDailyStatsView(){ const key=todayKey(), s=loadStats()[key]||{challenges:0, correct:0}; el.dailyStats.textContent=`今日: チャレンジ${s.challenges}回 / 正解${s.correct}問`; }
 
-  /* サウンド（WebAudio） */
-  const Audio=(()=>{ let ctx=null, enabled=true;
-    function ensure(){ if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; ctx=new AC(); } if(ctx&&ctx.state==='suspended') ctx.resume(); }
-    function setEnabled(on){ enabled=!!on; return enabled; } function isOn(){ return !!enabled; }
-    function osc(freq=440, dur=0.2, type='sine', vol=0.04, detune=0){ if(!enabled) return; ensure(); if(!ctx) return; const t=ctx.currentTime; const o=ctx.createOscillator(); const g=ctx.createGain();
-      o.type=type; o.frequency.value=freq; o.detune.value=detune; o.connect(g); g.connect(ctx.destination);
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+dur); o.start(t); o.stop(t+dur+0.05);
+  // サウンド（WebAudio）
+  const Audio = (()=> {
+    let ctx=null, enabled=true;
+    function ensure(){
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        ctx = new AC();
+      }
+      if (ctx && ctx.state === 'suspended') ctx.resume();
     }
-    function chord(){ osc(880,0.34,'triangle',0.06,0); osc(1174.66,0.36,'triangle',0.05,0); osc(1567.98,0.4,'sine',0.05,0); }
-    function whoosh(){ osc(220,0.14,'sawtooth',0.02); osc(330,0.12,'sine',0.02); }
-    function pop(){ if(!enabled) return; ensure(); if(!ctx) return; const duration=0.08; const buffer=ctx.createBuffer(1, ctx.sampleRate*duration, ctx.sampleRate);
-      const data=buffer.getChannelData(0); for(let i=0;i<data.length;i++){ const t=i/data.length; data[i]=(Math.random()*2-1)*(1-t); }
-      const src=ctx.createBufferSource(); const g=ctx.createGain(); g.gain.value=0.07; src.buffer=buffer; src.connect(g); g.connect(ctx.destination); src.start();
+    function setEnabled(on){ enabled = !!on; return enabled; }
+    function isOn(){ return !!enabled; }
+    function osc(freq=440, dur=0.2, type='sine', vol=0.04){
+      if (!enabled) return;
+      ensure(); if (!ctx) return;
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type; o.frequency.value = freq;
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+      o.start(t); o.stop(t+dur+0.05);
+    }
+    function chord(){ osc(880, 0.34, 'triangle', 0.06); osc(1174.66, 0.36, 'triangle', 0.05); osc(1567.98, 0.4, 'sine', 0.05); }
+    function whoosh(){ osc(220, 0.14, 'sawtooth', 0.02); osc(330, 0.12, 'sine', 0.02); }
+    function pop(){
+      if (!enabled) return; ensure(); if (!ctx) return;
+      const duration = 0.08;
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i=0;i<data.length;i++){ const t = i / data.length; data[i] = (Math.random()*2 - 1) * (1 - t); }
+      const src = ctx.createBufferSource();
+      const g = ctx.createGain(); g.gain.value = 0.07;
+      src.buffer = buffer; src.connect(g); g.connect(ctx.destination); src.start();
     }
     return { ensure, chord, whoosh, pop, setEnabled, isOn };
   })();
 
   el.soundToggle.addEventListener('click', () => {
-    Audio.ensure(); const nowOn = !Audio.isOn(); Audio.setEnabled(nowOn);
+    Audio.ensure();
+    const nowOn = !Audio.isOn();
+    Audio.setEnabled(nowOn);
     el.soundToggle.textContent = nowOn ? '🔊 サウンド ON' : '🔇 サウンド OFF';
   });
 
-  /* 祝演出 */
-  function celebrate(){
-    const ring=document.createElement('div'); ring.className='pulse';
-    const flash=document.createElement('div'); flash.className='flash';
-    el.workspace.appendChild(ring); el.workspace.appendChild(flash);
-    const layer=el.celebrate; layer.classList.remove('hidden');
-    const colors=['#ef4444','#f59e0b','#facc15','#22c55e','#38bdf8','#a855f7','#e91e63','#9ca3af'], count=90;
-    for(let i=0;i<count;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'vw';
-      c.style.background = colors[(i + Math.floor(Math.random()*colors.length)) % colors.length];
-      c.style.animationDuration = (700 + Math.random()*700) + 'ms';
-      c.style.transform = `translateY(-20vh) rotate(${Math.random()*360}deg)`; layer.appendChild(c);
-    }
-    Audio.chord();
-    setTimeout(()=>{ layer.classList.add('hidden'); layer.innerHTML=''; ring.remove(); flash.remove(); }, 1100);
-  }
-
-  /* スタンプ（30種：果物・動物） */
-  const STAMP_EMOJIS=['🍎','🍊','🍋','🍌','🍉','🍇','🍓','🍒','🍑','🍍','🥝','🥭','🍐','🍈','🫐','🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵'];
-  function showStamp(){
-    const e=STAMP_EMOJIS[Math.floor(Math.random()*STAMP_EMOJIS.length)];
-    el.stampEmoji.textContent=e; el.stamp.classList.remove('hidden');
-    const closer=()=>{ el.stamp.classList.add('hidden'); el.stamp.removeEventListener('click', closer); };
-    const timer=setTimeout(closer, 3000);
-    el.stamp.addEventListener('click', ()=>{ clearTimeout(timer); closer(); });
-    el.stampClose.addEventListener('click', ()=>{ clearTimeout(timer); closer(); }, { once:true });
-  }
-
-  /* 入力（答え欄：マイナス禁止） */
-  el.ansInput.addEventListener('keydown', (e)=>{ if(['-','+','e','E'].includes(e.key)) e.preventDefault(); });
-  el.ansInput.addEventListener('input', ()=>{ el.ansInput.value=(el.ansInput.value||'').replace(/[^\d]/g,''); });
+  // 入力（答え欄：マイナス禁止）
+  el.ansInput.addEventListener('keydown', (e) => {
+    if (['-','+','e','E'].includes(e.key)) e.preventDefault();
+  });
+  el.ansInput.addEventListener('input', () => {
+    el.ansInput.value = (el.ansInput.value || '').replace(/[^\d]/g,'');
+  });
   el.ansInput.addEventListener('wheel', (e)=> e.preventDefault(), { passive:false });
 
-  /* イベント */
+  /* ========= 日別記録 localStorage ========= */
+  const STATS_KEY = 'kids-math-stats-v1';
+  function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function loadStats(){ try{ return JSON.parse(localStorage.getItem(STATS_KEY) || '{}'); }catch(e){ return {}; } }
+  function saveStats(obj){ localStorage.setItem(STATS_KEY, JSON.stringify(obj)); }
+  function saveDailyStats(challengeCount, correctAdd){
+    const key = todayKey();
+    const stats = loadStats();
+    const cur = stats[key] || { challenges:0, correct:0 };
+    cur.challenges += (challengeCount||0);
+    cur.correct    += (correctAdd||0);
+    stats[key] = cur;
+    saveStats(stats);
+    updateDailyStatsView();
+  }
+  function updateDailyStatsView(){
+    const key = todayKey();
+    const s = loadStats()[key] || {challenges:0, correct:0};
+    el.dailyStats.textContent = `今日: チャレンジ${s.challenges}回 / 正解${s.correct}問`;
+  }
+
+  /* ========= イベント ========= */
   async function onPlay(){
     if (animating) return;
-    const a=clamp(parseInt(el.a.value||0),0,20), b=clamp(parseInt(el.b.value||0),0,20), op=el.op.value;
-    populate(); animating=true; setDisabled(true);
+    const a = clamp(parseInt(el.a.value || '0', 10), 0, 99);
+    const b = clamp(parseInt(el.b.value || '0', 10), 0, 99);
+    const op = el.op.value;
+    populate();
+    animating = true;
+    setDisabled(true);
     try{
-      if(op==='+'){ await animatePlus(a,b); } else { if(b>a){ el.hint.textContent='※ 引き算は「数A ≥ 数B」を入力してください。'; } else { await animateMinus(a,b); } }
+      if (op === '+'){ await animatePlus(a, b); }
+      else {
+        if (b > a){ el.hint.textContent = '※ 引き算は「数A ≥ 数B」を入力してください。'; }
+        else { await animateMinus(a, b); }
+      }
     } finally {
-      animating=false; setDisabled(false); if(challenge.active){ el.nextQ.classList.remove('hidden'); }
+      animating = false;
+      setDisabled(false);
+      if (challenge.active){ el.nextQ.classList.remove('hidden'); }
     }
   }
-  function onReset(){ if(animating) return; clearBlocks(); populate(); }
+  function onReset(){ if (animating) return; clearBlocks(); populate(); }
   function onRandom(){
-    if(animating) return;
-    const op=Math.random()<0.5?'+':'-'; let a,b;
-    if(op==='+'){ a=Math.floor(Math.random()*11); b=Math.floor(Math.random()*11); }
-    else { a=Math.floor(Math.random()*11)+9; b=Math.floor(Math.random()*(a+1)); }
-    el.op.value=op; el.a.value=a; el.b.value=b; populate();
+    if (animating) return;
+    const op = Math.random() < 0.5 ? '+' : '-';
+    let a, b;
+    if (op === '+'){ a = Math.floor(Math.random()*21); b = Math.floor(Math.random()*21); }
+    else { a = Math.floor(Math.random()*21)+9; b = Math.floor(Math.random()*(a+1)); }
+    el.op.value = op; el.a.value = a; el.b.value = b; populate();
   }
 
-  el.play.addEventListener('click', ()=>{ Audio.ensure(); onPlay(); });
-  el.reset.addEventListener('click', ()=>{ Audio.ensure(); onReset(); });
-  el.random.addEventListener('click', ()=>{ Audio.ensure(); onRandom(); });
+  el.play.addEventListener('click', () => { Audio.ensure(); onPlay(); });
+  el.reset.addEventListener('click', onReset);
+  el.random.addEventListener('click', onRandom);
   [el.a, el.b, el.op].forEach(inp => inp.addEventListener('change', populate));
-  el.speed.addEventListener('input', ()=>{ speedMul=parseFloat(el.speed.value); el.speedLabel.textContent=`x${speedMul.toFixed(2).replace(/\.00$/,'')}`; });
+  el.speed.addEventListener('input', () => { speedMul = parseFloat(el.speed.value || '1'); el.speedLabel.textContent = `x${speedMul.toFixed(2).replace(/\.00$/,'')}`; });
 
-  el.startCh.addEventListener('click', ()=>{ Audio.ensure(); startChallenge(); });
-  el.endCh.addEventListener('click', ()=>{ if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; } endChallenge(); });
-  el.checkBtn.addEventListener('click', ()=>{ Audio.ensure(); checkAnswer(); });
+  el.startCh.addEventListener('click', () => { Audio.ensure(); startChallenge(); });
+  el.endCh.addEventListener('click', () => { if (autoTimer){ clearTimeout(autoTimer); autoTimer=null; } endChallenge(); });
+  el.checkBtn.addEventListener('click', () => { Audio.ensure(); checkAnswer(); });
   el.nextQ.addEventListener('click', nextQuestion);
-  el.modeSel.addEventListener('change', ()=>{ if(!challenge.active) {/* 設定のみ */} });
+  el.modeSel.addEventListener('change', () => { if (!challenge.active) {/* 設定のみ */} });
+  el.levelSel.addEventListener('change', () => { if (!challenge.active) {/* 設定のみ */} });
 
-  // 既定の出題モードは「足し算のみ」
-  el.modeSel.value='plus'; challenge.mode='plus';
+  // チャレンジ回答チェック & 自動進行
+  async function checkAnswer(){
+    const p = challenge.list[challenge.idx];
+    const n = p.op === '+' ? (p.a + p.b) : (p.a - p.b);
+    const user = parseInt(el.ansInput.value || 'NaN', 10);
+    if (user === n){
+      el.checkMsg.textContent = '⭕ せいかい！';
+      el.checkMsg.style.color = '#16a34a';
+      if (!challenge.marks[challenge.idx]) challenge.correct++;
+      challenge.marks[challenge.idx] = 'done';
+      buildProgress();
+      celebrate();
+      await onPlay();
+      if (!challenge.active) return;
+      if (challenge.idx < QCOUNT - 1){ autoTimer = setTimeout(()=> nextQuestion(), 3000); }
+      else { autoTimer = setTimeout(()=> endChallenge(), 3000); }
+    } else {
+      el.checkMsg.textContent = '❌ ちがうよ';
+      el.checkMsg.style.color = '#ef4444';
+      challenge.marks[challenge.idx] = 'fail';
+      buildProgress();
+    }
+  }
+  function nextQuestion(){
+    if (autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+    if (challenge.idx < QCOUNT - 1){
+      challenge.idx++;
+      loadChallengeProblem();
+      buildProgress();
+    } else {
+      endChallenge();
+    }
+  }
 
-  populate(); updateDailyStatsView();
+  // 初期化
+  el.modeSel.value = 'plus'; challenge.mode = 'plus';
+  el.levelSel.value = 'easy'; challenge.level = 'easy';
+  populate();
+  updateDailyStatsView();
 })();
 </script>
 </body>
