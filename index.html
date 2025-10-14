@@ -2,11 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
+<!-- iPhone/iPad 最適化 + PWAアイコン設定 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#6c5ce7" />
-<title>はじめての たしざん・ひきざん ブロック</title>
+<!-- PWA: 画像を置いたらホーム画面にアイコンが出ます -->
+icons/apple-touch-icon.png
+manifest.webmanifest
+
+<title>はじめての たしざん・ひきざん ブロック（10×1 & ステージ／最終版）</title>
 <style>
   :root{
     --bg:#f7f8fb; --panel:#ffffff; --text:#1f2a44; --muted:#6b7280; --accent:#6c5ce7;
@@ -25,16 +30,29 @@
 
     /* 祝エフェクト */
     --flash:#fff6;
+
+    /* 全体縮小（JSで計算して適用） */
+    --app-scale: 1;
   }
   *{box-sizing:border-box}
   html, body { height: 100%; }
   body{
     margin:0; background:var(--bg); color:var(--text);
     font-family: ui-rounded, system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    /* 画面内に収めるため、基本はスクロールしない */
+    overflow: hidden;
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* ★ 全体をスケールして画面に収める */
+  #app{
+    transform: scale(var(--app-scale));
+    transform-origin: top left;
+    width: 100%;
+  }
+
   header{
     padding:16px calc(20px + env(safe-area-inset-right)) 16px calc(20px + env(safe-area-inset-left));
     background:linear-gradient(90deg, var(--accent), #8e79ff);
@@ -43,10 +61,10 @@
   header h1{ margin:0; font-size: clamp(18px, 3.5vw, 22px); }
   main{ max-width:1100px; margin:20px auto; padding:0 16px; }
   .card{
-    background:var(--panel); border-radius:14px; box-shadow: 0 8px 24px rgba(31,42,68,.08);
+    background:var(--panel); border-radius:14px; box-shadow:0 8px 24px rgba(31,42,68,.08);
     padding:16px;
   }
-  .controls{ display:grid; gap:12px; grid-template-columns: 1fr; }
+  .controls{ display:grid; gap:12px; grid-template-columns:1fr; }
   .row{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
   .row > * { flex:0 0 auto; }
   label{ font-size:14px; color:var(--muted); }
@@ -69,12 +87,14 @@
     margin-top:16px; padding:14px; border:1px dashed #d1d5db; border-radius:12px; background:#fcfdff;
     position:relative; overflow:clip;
   }
+
+  /* ★ 式のフォントを大きく（上限を拡大） */
   .equation{
-    font-size: clamp(18px, 2.5vw, 24px);
-    display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:10px;
+    font-size: clamp(26px, 6vw, 48px);
+    display:flex; align-items:center; gap:16px; justify-content:center; margin-bottom:12px;
   }
-  .eq-num{ min-width:40px; text-align:center; font-weight:700; }
-  .eq-op, .eq-eq{ opacity:.7; font-weight:700; }
+  .eq-num{ min-width:48px; text-align:center; font-weight:800; }
+  .eq-op, .eq-eq{ opacity:.75; font-weight:800; }
 
   /* 縦並び（数A → 数B → こたえ） */
   .boards{
@@ -96,12 +116,12 @@
   /* ユニット（小ブロック＝値1） */
   .block{
     width:var(--block-size); height:var(--block-size);
-    border-radius:12px; box-shadow: 0 3px 8px rgba(0,0,0,.08); position:relative;
+    border-radius:12px; box-shadow:0 3px 8px rgba(0,0,0,.08); position:relative;
   }
-  /* 20：薄オレンジ＋太オレンジ枠（1単位×20個で20を表現） */
-  .block.twentyu{ background: var(--twenty-bg); border: 6px solid var(--twenty-border); }
-  /* 10：白＋赤枠（枠線太さを20と同じ6pxに統一） */
-  .block.tenu{ background: var(--ten-bg); border: 6px solid var(--ten-border); }
+  /* 20：薄オレンジ＋太オレンジ枠（1×20で20を表現） */
+  .block.twentyu{ background:var(--twenty-bg); border:6px solid var(--twenty-border); }
+  /* 10：白＋赤枠（枠線太さを20と同じ6px） */
+  .block.tenu{ background:var(--ten-bg); border:6px solid var(--ten-border); }
 
   /* 一桁色 */
   .c-red{ background: var(--c-red); } .c-orange{ background: var(--c-orange); } .c-yellow{ background: var(--c-yellow); }
@@ -115,7 +135,7 @@
 
   /* 飛行クローン・消滅 */
   .fly-clone{
-    position:fixed; z-index:9999; border-radius:12px; box-shadow: 0 3px 10px rgba(0,0,0,.2);
+    position:fixed; z-index:9999; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,.2);
     will-change: transform, opacity;
   }
   .poof{ animation: poof .35s ease forwards; }
@@ -172,124 +192,108 @@
   .flash{ position:absolute; inset:0; background: var(--flash); animation: flashout 300ms ease-out forwards; }
   @keyframes flashout{ from{ opacity:1; } to{ opacity:0; } }
 
-  /* スタンプ（モーダル生成時にクラス適用） */
-  .stamp{
-    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-    background: rgba(0,0,0,.18); z-index:10000; pointer-events:auto;
-    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom);
-  }
-  .stamp-card{
-    background:white; border-radius:24px; padding:20px 26px; text-align:center;
-    box-shadow: 0 18px 50px rgba(0,0,0,.22);
-    transform: scale(.6) rotate(-3deg);
-    animation: stamp-in 480ms cubic-bezier(.2, .9, .2, 1.2) forwards;
-    border:6px dashed #f59e0b;
-  }
-  @keyframes stamp-in{ 0% { transform: scale(.4) rotate(-8deg); opacity:0; } 100%{ transform: scale(1) rotate(0deg); opacity:1; } }
-  .stamp-emoji{ font-size: min(22vmin, 180px); line-height:1; }
-  .stamp-title{ font-size:20px; font-weight:800; color:#ef4444; margin-top:8px; }
-  .stamp-sub{ font-size:14px; color:#6b7280; margin-top:4px; }
-  .stamp-close{ margin-top:12px; padding:8px 14px; border-radius:999px; border:0; background:#3e2cff; color:#fff; font-weight:700; }
-
   @media (max-width:740px){
     :root{ --block-size:52px; --gap:8px; }
   }
 </style>
 </head>
 <body>
-<header>
-  <h1>はじめての たしざん・ひきざん ブロック</h1>
-</header>
-<main>
-  <section class="card controls" aria-label="コントロール">
-    <div class="row" id="basicControls">
-      <label>演算</label>
-      <select id="op" aria-label="演算を選択">
-        <option value="+">＋（たす）</option>
-        <option value="-">−（ひく）</option>
-      </select>
+<!-- ★ 全体スケーリング対象のラッパー -->
+<div id="app">
+  <header>
+    <h1>はじめての たしざん・ひきざん ブロック（10×1 & ステージ／最終版）</h1>
+  </header>
+  <main>
+    <section class="card controls" aria-label="コントロール">
+      <div class="row" id="basicControls">
+        <label>演算</label>
+        <select id="op" aria-label="演算を選択">
+          <option value="+">＋（たす）</option>
+          <option value="-">−（ひく）</option>
+        </select>
 
-      <label>数A</label>
-      <input id="a" type="number" min="0" max="99" value="13" inputmode="numeric" pattern="[0-9]*" />
+        <label>数A</label>
+        <input id="a" type="number" min="0" max="99" value="13" inputmode="numeric" pattern="[0-9]*" />
 
-      <label>数B</label>
-      <input id="b" type="number" min="0" max="99" value="7" inputmode="numeric" pattern="[0-9]*" />
+        <label>数B</label>
+        <input id="b" type="number" min="0" max="99" value="7" inputmode="numeric" pattern="[0-9]*" />
 
-      <button id="play" class="primary">▶ 再生</button>
-      <button id="reset">↺ リセット</button>
-      <button id="random">🎲 ランダム</button>
+        <button id="play" class="primary">▶ 再生</button>
+        <button id="reset">↺ リセット</button>
+        <button id="random">🎲 ランダム</button>
 
-      <div class="speed">
-        <span>スピード</span>
-        <input id="speed" type="range" min="0.5" max="2.0" step="0.25" value="1.0" />
-        <span id="speedLabel">x1.0</span>
+        <div class="speed">
+          <span>スピード</span>
+          <input id="speed" type="range" min="0.5" max="2.0" step="0.25" value="1.0" />
+          <span id="speedLabel">x1.0</span>
+        </div>
+
+        <button id="soundToggle">🔊 サウンド ON</button>
       </div>
 
-      <button id="soundToggle">🔊 サウンド ON</button>
-    </div>
+      <div class="challenge-bar">
+        <label for="modeSel">出題</label>
+        <select id="modeSel" aria-label="チャレンジ出題モード">
+          <option value="plus" selected>足し算のみ</option>
+          <option value="minus">引き算のみ</option>
+          <option value="mixed">足し算と引き算</option>
+        </select>
 
-    <div class="challenge-bar">
-      <label for="modeSel">出題</label>
-      <select id="modeSel" aria-label="チャレンジ出題モード">
-        <option value="plus" selected>足し算のみ</option>
-        <option value="minus">引き算のみ</option>
-        <option value="mixed">足し算と引き算</option>
-      </select>
+        <label for="levelSel">難易度</label>
+        <select id="levelSel" aria-label="難易度">
+          <option value="easy" selected>かんたん</option>
+          <option value="normal">ふつう</option>
+          <option value="hard">むずかしい</option>
+        </select>
 
-      <label for="levelSel">難易度</label>
-      <select id="levelSel" aria-label="難易度">
-        <option value="easy" selected>かんたん</option>
-        <option value="normal">ふつう</option>
-        <option value="hard">むずかしい</option>
-      </select>
-
-      <button id="startChallenge">🏁 チャレンジ開始（5問）</button>
-      <div class="ans-area hidden" id="ansArea">
-        <label for="ansInput">こたえ</label>
-        <input id="ansInput" type="number" inputmode="numeric" pattern="[0-9]*" min="0" />
-        <button id="checkAnswer">✓ 確認</button>
-        <span id="checkMsg"></span>
-        <button id="nextQ" class="hidden">次へ ▶</button>
+        <button id="startChallenge">🏁 チャレンジ開始（5問）</button>
+        <div class="ans-area hidden" id="ansArea">
+          <label for="ansInput">こたえ</label>
+          <input id="ansInput" type="number" inputmode="numeric" pattern="[0-9]*" min="0" />
+          <button id="checkAnswer">✓ 確認</button>
+          <span id="checkMsg"></span>
+          <button id="nextQ" class="hidden">次へ ▶</button>
+        </div>
+        <div class="progress" id="progress"></div>
+        <div class="score" id="score">正解 0/5</div>
+        <div id="dailyStats">今日: チャレンジ0回 / 正解0問</div>
+        <button id="endChallenge" class="hidden">終了</button>
       </div>
-      <div class="progress" id="progress"></div>
-      <div class="score" id="score">正解 0/5</div>
-      <div id="dailyStats">今日: チャレンジ0回 / 正解0問</div>
-      <button id="endChallenge" class="hidden">終了</button>
-    </div>
-  </section>
+    </section>
 
-  <section class="card workspace" aria-label="ブロックのワークスペース" id="workspace">
-    <div class="equation" aria-live="polite">
-      <span class="eq-num" id="eqA">13</span>
-      <span class="eq-op" id="eqOp">−</span>
-      <span class="eq-num" id="eqB">7</span>
-      <span class="eq-eq">＝</span>
-      <span class="eq-num" id="eqAns">？</span>
-    </div>
-
-    <!-- 縦並び：数A → 数B → こたえ -->
-    <div class="boards" id="boards">
-      <div class="board" aria-label="数Aのブロック">
-        <h3>数A</h3>
-        <div class="blocks" id="left"></div>
+    <section class="card workspace" aria-label="ブロックのワークスペース" id="workspace">
+      <div class="equation" aria-live="polite">
+        <span class="eq-num" id="eqA">13</span>
+        <span class="eq-op" id="eqOp">−</span>
+        <span class="eq-num" id="eqB">7</span>
+        <span class="eq-eq">＝</span>
+        <span class="eq-num" id="eqAns">？</span>
       </div>
 
-      <div class="board" aria-label="数Bのブロック">
-        <h3>数B</h3>
-        <div class="blocks" id="right"></div>
+      <!-- 縦並び：数A → 数B → こたえ -->
+      <div class="boards" id="boards">
+        <div class="board" aria-label="数Aのブロック">
+          <h3>数A</h3>
+          <div class="blocks" id="left"></div>
+        </div>
+
+        <div class="board" aria-label="数Bのブロック">
+          <h3>数B</h3>
+          <div class="blocks" id="right"></div>
+        </div>
+
+        <div class="board" aria-label="こたえのブロック">
+          <h3>こたえ</h3>
+          <div class="blocks" id="result"></div>
+        </div>
       </div>
 
-      <div class="board" aria-label="こたえのブロック">
-        <h3>こたえ</h3>
-        <div class="blocks" id="result"></div>
-      </div>
-    </div>
+      <div class="hint" id="hint">「再生」を押すとブロックが動きます。</div>
+    </section>
+  </main>
+</div>
 
-    <div class="hint" id="hint">「再生」を押すとブロックが動きます。</div>
-  </section>
-</main>
-
-<!-- 祝オーバーレイ -->
+<!-- 祝オーバーレイ（紙吹雪・リング・フラッシュ） -->
 <div id="celebrate" class="celebrate hidden"></div>
 
 <script>
@@ -297,6 +301,7 @@
   const qs = s => document.querySelector(s);
 
   const el = {
+    app: qs('#app'),
     op: qs('#op'), a: qs('#a'), b: qs('#b'),
     left: qs('#left'), right: qs('#right'), result: qs('#result'),
     eqA: qs('#eqA'), eqB: qs('#eqB'), eqOp: qs('#eqOp'), eqAns: qs('#eqAns'),
@@ -320,11 +325,33 @@
     celebrate: qs('#celebrate'),
   };
 
+  /* ========= スケール調整（全体を画面に収める） ========= */
+  function fitToViewport(){
+    const app = el.app;
+    if (!app) return;
+    // 一旦等倍
+    document.documentElement.style.setProperty('--app-scale', '1');
+    const vw = window.innerWidth, vh = window.innerHeight;
+
+    // appの実サイズを測る
+    const rect = app.getBoundingClientRect();
+    // スクロールを仮に解除して実高さを推定
+    const fullH = app.scrollHeight;
+    const fullW = app.scrollWidth;
+
+    let scale = 1.0;
+    if (fullH > vh) scale = Math.max(0.6, vh / fullH);  // 高さ基準
+    // 幅も収まるよう調整
+    if (fullW * scale > vw) {
+      scale = Math.max(0.6, scale * (vw / (fullW * scale)));
+    }
+    document.documentElement.style.setProperty('--app-scale', scale.toFixed(3));
+  }
+
   /* ========= 共通ユーティリティ ========= */
   let animating = false;
   let speedMul = parseFloat(el.speed.value || '1');
-  let autoTimer = null; // 自動遷移タイマー
-
+  let autoTimer = null; // 自動遷移タイマー（正解時のみ）
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
   const ms = (base) => base / speedMul;
 
@@ -422,6 +449,7 @@
     updateEq(a, b, el.op.value, null);
     el.hint.textContent = '「再生」を押すとブロックが動きます。';
     requestAnimationFrame(updateResponsiveSizes);
+    requestAnimationFrame(fitToViewport);
   }
 
   /* ========= 自動縮小（横10列に収める） ========= */
@@ -436,7 +464,7 @@
     document.documentElement.style.setProperty('--gap', `${gap}px`);
     document.documentElement.style.setProperty('--block-size', `${bs}px`);
   }
-  window.addEventListener('resize', () => requestAnimationFrame(updateResponsiveSizes));
+  window.addEventListener('resize', () => { requestAnimationFrame(updateResponsiveSizes); requestAnimationFrame(fitToViewport); });
 
   /* ========= アニメ基盤 ========= */
   function flipMove(elm, newParent){
@@ -509,7 +537,7 @@
     renderValue(el.result, n, 'result');
     updateEq(a, b, '+', n);
     el.hint.textContent = 'できた！ もとのブロックも見てみよう。';
-    updateResponsiveSizes();
+    updateResponsiveSizes(); fitToViewport();
     restoreSides(a, b);
   }
 
@@ -529,7 +557,7 @@
     renderValue(el.result, n, 'result');
     updateEq(a, b, '-', n);
     el.hint.textContent = 'できた！ もとのブロックも見てみよう。';
-    updateResponsiveSizes();
+    updateResponsiveSizes(); fitToViewport();
     restoreSides(a, b);
   }
 
@@ -538,13 +566,13 @@
     el.right.innerHTML = '';
     renderValue(el.left, a, 'left');
     renderValue(el.right, b, 'right');
-    updateResponsiveSizes();
+    updateResponsiveSizes(); fitToViewport();
   }
 
   /* ========= チャレンジ ========= */
   const QCOUNT = 5;
   const challenge = {
-    active:false, list:[], idx:0, correct:0, marks:[],
+    active:false, list:[], idx:0, correct:0, marks:[], // 'done' / 'fail'
     mode:'plus', level:'easy'
   };
 
@@ -619,7 +647,7 @@
 
     loadChallengeProblem();
     buildProgress();
-    requestAnimationFrame(updateResponsiveSizes);
+    updateResponsiveSizes(); fitToViewport();
   }
 
   function endChallenge(){
@@ -633,6 +661,7 @@
     const total = challenge.correct;
     el.hint.textContent = `チャレンジ終了！ 正解 ${total}/${QCOUNT}`;
     if (total >= 3){ showStamp(); }
+    updateResponsiveSizes(); fitToViewport();
   }
 
   function loadChallengeProblem(){
@@ -651,6 +680,7 @@
 
   /* ========= 祝・サウンド ========= */
   function celebrate(){
+    // 正解時のみに呼ばれる（不正解では呼ばない）
     // 紙吹雪（下部中央→上へ扇状）
     const layer = el.celebrate;
     layer.classList.remove('hidden');
@@ -804,7 +834,7 @@
   el.play.addEventListener('click', () => { Audio.ensure(); onPlay(); });
   el.reset.addEventListener('click', onReset);
   el.random.addEventListener('click', onRandom);
-  [el.a, el.b, el.op].forEach(inp => inp.addEventListener('change', populate));
+  [el.a, el.b, el.op].forEach(inp => inp.addEventListener('change', () => { populate(); fitToViewport(); }));
   el.speed.addEventListener('input', () => { speedMul = parseFloat(el.speed.value || '1'); el.speedLabel.textContent = `x${speedMul.toFixed(2).replace(/\.00$/,'')}`; });
 
   el.startCh.addEventListener('click', () => { Audio.ensure(); startChallenge(); });
@@ -825,9 +855,12 @@
       if (!challenge.marks[challenge.idx]) challenge.correct++;
       challenge.marks[challenge.idx] = 'done';
       buildProgress();
+      // ★ 正解のみ祝エフェクト
       celebrate();
+      // ★ 正解でもチャレンジ用の可視化アニメを自動再生
       await onPlay();
       if (!challenge.active) return;
+      // ★ 正解時のみ3秒後に自動遷移
       if (challenge.idx < QCOUNT - 1){ autoTimer = setTimeout(()=> nextQuestion(), 3000); }
       else { autoTimer = setTimeout(()=> endChallenge(), 3000); }
     } else {
@@ -835,6 +868,9 @@
       el.checkMsg.style.color = '#ef4444';
       challenge.marks[challenge.idx] = 'fail';
       buildProgress();
+      // ★ 不正解でも可視化アニメを自動再生（学習フィードバック）
+      await onPlay();
+      // 不正解時は自動遷移しない（再挑戦できる）
     }
   }
   function nextQuestion(){
@@ -843,6 +879,7 @@
       challenge.idx++;
       loadChallengeProblem();
       buildProgress();
+      fitToViewport();
     } else {
       endChallenge();
     }
@@ -853,10 +890,14 @@
   el.levelSel.value = 'easy'; challenge.level = 'easy';
   populate();
   updateDailyStatsView();
+  fitToViewport();
+
+  /* ========= PWA: HTTPS or localhost なら Service Worker登録（任意） ========= */
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    // sw.js を用意した場合のみ有効（なくても動作可）
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
 })();
 </script>
 </body>
-</html>
-
-
-
