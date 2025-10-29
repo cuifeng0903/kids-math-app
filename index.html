@@ -48,8 +48,8 @@
   button{appearance:none; border:none; border-radius:14px; padding:12px 16px; font-size:1.05rem; background:#fff; border:1px solid var(--border); box-shadow:var(--shadow); color:var(--ink)}
   button.primary{background:var(--focus); color:#fff; border-color:transparent}
   button.mute{background:#f2f4f8}
+  button.big{font-size:1.15rem}
   button:active{transform:scale(0.98)}
-  .big{font-size:1.15rem}
 
   .seg{display:flex; background:#f2f4f8; border-radius:14px; overflow:hidden; border:1px solid var(--border)}
   .seg-btn{appearance:none; border:none; padding:10px 12px; font-weight:700; background:transparent}
@@ -356,9 +356,43 @@
   // ====== Movement & Animation Utilities ======
   function wait(ms){ return new Promise(res=>setTimeout(res,ms)); }
 
-  // Move "clone" to an absolute target; remove source immediately (left pack), then add real block to target
-  async function transferBlock(sourceBlock, targetX, targetY, place='append'){
-    // Create clone with same classes
+  // コンテナ内側メトリクスを取得
+  function getContainerMetrics(container){
+    const cs = getComputedStyle(container);
+    const padL = parseFloat(cs.paddingLeft || '0');
+    const padR = parseFloat(cs.paddingRight || '0');
+    const gap  = parseFloat((cs.columnGap || cs.gap || '8').toString());
+    const innerW = container.clientWidth - padL - padR;
+    return {padL, padR, gap, innerW};
+  }
+
+  // 次に append されるブロックの見た目上の着地点（右隣 or 折り返し先頭）を正確に算出
+  function calcNextAppendSlot(container){
+    const rect = container.getBoundingClientRect();
+    const {padL, gap, innerW} = getContainerMetrics(container);
+    const last = container.lastElementChild;
+
+    if(!last){
+      return { x: rect.left + padL, y: rect.top + 6, willWrap:false };
+    }
+    const lastRect = last.getBoundingClientRect();
+    const blockW = last.offsetWidth;
+    const blockH = last.offsetHeight;
+
+    const nextLeftInRow = last.offsetLeft + blockW + gap;
+    const willWrap = (nextLeftInRow + blockW) > innerW + 0.5;
+
+    if(!willWrap){
+      // 同一行の右隣
+      return { x: lastRect.right + gap, y: lastRect.top, willWrap:false };
+    }else{
+      // 次の行の先頭
+      return { x: rect.left + padL, y: lastRect.top + blockH + gap, willWrap:true };
+    }
+  }
+
+  // 移動元を消し（左詰め）、クローンを目標座標へ動かし、その位置に本体を据える
+  async function transferBlockToContainer(sourceBlock, targetContainer, targetX, targetY, place='append'){
     const sRect = sourceBlock.getBoundingClientRect();
     const clone = sourceBlock.cloneNode(true);
     clone.style.position='fixed';
@@ -368,24 +402,23 @@
     clone.style.transition='transform 420ms ease-in-out, opacity 200ms ease-in-out';
     document.body.appendChild(clone);
 
-    // Remove source immediately (元の表示を消し、左詰めに)
+    // 元を即時消去 → Flexの再レイアウトで左詰め
     sourceBlock.remove();
 
-    // Animate to target
+    // 目標へ移動
     const dx = targetX - sRect.left;
     const dy = targetY - sRect.top;
     requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.96)`; });
     await wait(420);
 
-    // Add real block at target container
-    const real = clone.cloneNode(true);
-    real.style.position=''; real.style.left=''; real.style.top=''; real.style.transform='';
-    real.style.transition=''; real.style.zIndex='';
+    // 実ブロックを据え付け
+    const real = sourceBlock.cloneNode(true);
+    real.removeAttribute('style');
     real.classList.add('bounce-in');
-    if(place==='append') groupAns.appendChild(real);
-    else groupAns.prepend(real);
+    if(place==='append') targetContainer.appendChild(real);
+    else targetContainer.prepend(real);
 
-    // Remove clone
+    // クローン後処理
     clone.style.opacity='0';
     await wait(150);
     clone.remove();
@@ -393,32 +426,18 @@
     return real;
   }
 
-  // Addition target position: to the right of current last block (or left edge if none)
-  function calcAddTargetRightOfPrev(){
-    const pad=12;
-    const aRect = groupAns.getBoundingClientRect();
-    const last = groupAns.lastElementChild;
-    if(last){
-      const r = last.getBoundingClientRect();
-      // right隣に置く座標（中央寄せ）
-      return {x: r.right + 8 - 20, y: r.top + 6};
-    }else{
-      return {x: aRect.left + pad, y: aRect.top + 6};
-    }
-  }
-
-  // Subtraction target position: overlap on the rightmost answer block
+  // 右端ブロック上へ重ねる座標（引き算で使用）
   function calcSubTargetOnRightmost(){
     const last = groupAns.lastElementChild;
     if(!last){
       const aRect = groupAns.getBoundingClientRect();
-      return {x:aRect.right-30, y:aRect.top+6}; // fallback
+      return {x:aRect.right-30, y:aRect.top+6};
     }
     const r = last.getBoundingClientRect();
     return {x: r.left + r.width/2 - 20, y: r.top + r.height/2 - 20};
   }
 
-  // Show dotted outline on the exact rect, color = block's borderColor if present, else backgroundColor
+  // 点線枠（消えるブロックの色で一瞬表示）
   function showDottedRectForBlock(block, ms=220){
     const rect = block.getBoundingClientRect();
     const cs = getComputedStyle(block);
@@ -446,71 +465,72 @@
     }, ms);
   }
 
-  // ====== Animations per要件 ======
+  // ====== Animations ======
+  // 足し算：A→B 左から順に、常に直前ブロックの右隣（折返し含む）へピタリ配置
   async function animateAdd_Learn(A, B){
     clear(groupAns);
 
-    // A 左から順 → 直前ブロックの右隣（移動元は消去＆左詰め）
+    // A 左から順
     let aBlocks = Array.from(groupA.children);
     for(const src of aBlocks){
-      const t = calcAddTargetRightOfPrev();
-      await transferBlock(src, t.x, t.y, 'append');
+      const pos = calcNextAppendSlot(groupAns);
+      await transferBlockToContainer(src, groupAns, pos.x, pos.y, 'append');
       await wait(40);
     }
-
-    // B 左から順 → 直前ブロックの右隣（移動元は消去＆左詰め）
+    // B 左から順
     let bBlocks = Array.from(groupB.children);
     for(const src of bBlocks){
-      const t = calcAddTargetRightOfPrev();
-      await transferBlock(src, t.x, t.y, 'append');
+      const pos = calcNextAppendSlot(groupAns);
+      await transferBlockToContainer(src, groupAns, pos.x, pos.y, 'append');
       await wait(40);
     }
 
-    // 合計値の配色へ切替
+    // 合計の配色へ切替
     await wait(160);
     buildBlocks(groupAns, A+B);
 
-    // A/B 再表示
+    // ★A/B を少し遅らせて再表示（視認性向上）
+    await wait(500);  // ←必要に応じて 300〜800ms へ調整可能
     buildBlocks(groupA, A);
     buildBlocks(groupB, B);
   }
 
-  // A全数を“一度に”こたえ欄へ移動するアニメ
+  // A 全数を“一度に”こたえ欄へ移動（元色のまま／元は消去・左詰め）
   async function animateMoveAllAtoAnswerOnce(A){
-    // 事前にAの配色クラスを保持
     const aClasses = getBlockClassesForNumber(A);
-
-    // Aの各ブロックを同期的（同時）に移動：移動元は消去＆左詰め
     const aBlocks = Array.from(groupA.children);
     const aRect = groupAns.getBoundingClientRect();
-    const stepX = 50, stepY = 52; // レイアウト目安（2列程度に収まるように）
+
+    // 行幅近似（ブロック＋gap単位）
+    const cs = getComputedStyle(groupAns);
+    const gap = parseFloat((cs.columnGap || cs.gap || '8').toString());
+    const blockW = (aBlocks[0]?.offsetWidth || 42);
+    const cols = Math.max(1, Math.floor((groupAns.clientWidth - parseFloat(cs.paddingLeft||'0') - parseFloat(cs.paddingRight||'0')) / (blockW + gap)));
+
     const promises = aBlocks.map((src, i)=>{
-      const col = i % Math.max(1, Math.floor(aRect.width/stepX));
-      const row = Math.floor(i / Math.max(1, Math.floor(aRect.width/stepX)));
-      const x = aRect.left + 12 + col*stepX;
-      const y = aRect.top + 6 + row*stepY;
-      return transferBlock(src, x, y, 'append');
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = aRect.left + parseFloat(cs.paddingLeft||'0') + col*(blockW+gap);
+      const y = aRect.top + 6 + row*(blockW+gap);
+      return transferBlockToContainer(src, groupAns, x, y, 'append');
     });
     await Promise.all(promises);
 
-    // こたえ欄をAの配色で正しく再構築（順序・色）
+    // 正確な並び・色で再構築
     clear(groupAns);
     aClasses.forEach(cls => groupAns.appendChild(makeBlock(cls)));
   }
 
+  // 引き算：Aを一括移動→B左から順に右端へ重ね、両方消去（点線枠を一瞬表示）
   async function animateSub_Learn(A, B){
-    // 1) Aを“一度に”こたえ欄へ移動（元色のまま）
+    // 1) A一括移動
     await animateMoveAllAtoAnswerOnce(A);
 
-    // 2) B 左から順：こたえ欄 右端へ重ね → 両方消去（点線枠は消えるこたえ欄ブロックの色）
+    // 2) B 左から順で右端に重ね→両方消去
     const bBlocks = Array.from(groupB.children);
     const take = Math.min(B, bBlocks.length);
     for(let i=0;i<take;i++){
       const src = bBlocks[i];
-      // 移動元を消して左詰め、クローン移動
-      const targetPos = calcSubTargetOnRightmost();
-      // 右端対象（消去色確定のため先に取得）
-      const last = groupAns.lastElementChild;
       const sRect = src.getBoundingClientRect();
       const clone = src.cloneNode(true);
       clone.style.position='fixed';
@@ -519,18 +539,20 @@
       clone.style.zIndex= 9999;
       clone.style.transition='transform 420ms ease-in-out, opacity 240ms ease-in-out';
       document.body.appendChild(clone);
-      // 移動元消去＆左詰め
+      // 元を消す（左詰め）
       src.remove();
-      // 移動
+
+      // 右端ターゲットへ
+      const targetPos = calcSubTargetOnRightmost();
       const dx = targetPos.x - sRect.left;
       const dy = targetPos.y - sRect.top;
       requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.96)`; });
       await wait(420);
 
+      // 右端ブロックを消去
+      const last = groupAns.lastElementChild;
       if(last){
-        // 点線枠（色合わせ）
         showDottedRectForBlock(last, 220);
-        // 両方消去
         last.style.transition='transform 240ms ease-in, opacity 240ms ease-in';
         last.style.transform='scale(0.7)'; last.style.opacity='0';
         clone.style.transform='scale(0.7)'; clone.style.opacity='0';
@@ -541,7 +563,7 @@
       await wait(40);
     }
 
-    // 3) 残りを結果配色へ切替
+    // 3) 結果配色へ
     await wait(120);
     const remain = Math.max(0, A-B);
     buildBlocks(groupAns, remain);
@@ -576,7 +598,7 @@
   function bigConfetti(){
     const colors=['#ff4d4f','#ff8c00','#ffd54a','#42c58a','#4aa3ff','#9c27b0','#ff1493','#00c2ff','#00e676'];
     const W=window.innerWidth, H=window.innerHeight;
-    const total = Math.min(480, Math.floor(W*H/4500)+260); // 260〜480程度（増量）
+    const total = Math.min(480, Math.floor(W*H/4500)+260);
     for(let i=0;i<total;i++){
       const c=document.createElement('div');
       c.className='confetti fly';
@@ -806,3 +828,4 @@
 </script>
 </body>
 </html>
+``
