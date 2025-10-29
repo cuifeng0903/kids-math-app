@@ -6,54 +6,67 @@
 <title>みんなのさんすう - たしざん・ひきざん</title>
 <style>
   :root{
-    --bg:#f7fafc; --ink:#223; --muted:#667;
+    --bg:#f7fafc; --ink:#223; --muted:#667; --card:#fff; --border:#e6e9ef; --shadow:0 4px 16px rgba(0,0,0,0.08);
+    --focus:#3b82f6; --radius:16px; --radius-sm:12px;
+
+    /* one-digit palette */
     --red:#e53935; --orange:#ff8c00; --yellow:#ffd54a; --green:#42c58a;
     --sky:#4aa3ff; --purple:#9c27b0; --lavender:#c8a2c8; --deeppink:#ff1493;
     --gray-light:#d9d9d9; --gray:#9e9e9e; --gray-dark:#616161;
-    --ten-border:#e53935; --twenty-border:#ff9800; --twenty-bg:#fffaf0;
-    --card:#ffffff; --border:#e6e9ef; --focus:#3b82f6; --shadow:0 4px 16px rgba(0,0,0,0.08);
-    --radius:16px; --radius-sm:12px;
+
+    /* tens / twenties */
+    --ten-border:#e53935;
+    --twenty-border:#ff9800; --twenty-bg:#fffaf0;
+
+    /* effects */
+    --ok:#e53935; /* red circle */
+    --ng:#1e88e5; /* blue cross */
   }
   *{box-sizing:border-box}
   html,body{background:var(--bg); color:var(--ink); font-family:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Yu Gothic","Meiryo",sans-serif;}
   body{margin:0}
-  header{display:flex; align-items:center; justify-content:space-between; padding:16px; position:sticky; top:0; background:var(--bg); z-index:10; border-bottom:1px solid var(--border);}
-  header h1{font-size:1.4rem; margin:0}
-  .tagline{color:var(--muted); font-size:0.9rem}
-  .shell{max-width:980px; margin:0 auto; padding:16px}
-  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
-  .toolbar{display:flex; gap:8px; align-items:center; padding:12px; flex-wrap:wrap}
-  .seg{display:flex; background:#f2f4f8; border-radius:14px; overflow:hidden; border:1px solid var(--border)}
-  .seg-btn{appearance:none; border:none; flex:1; padding:12px 16px; font-weight:700; background:transparent}
-  .seg-btn.active{background:white; color:var(--focus)}
-  button{appearance:none; border:none; border-radius:14px; padding:14px 18px; font-size:1.1rem; background:#fff; border:1px solid var(--border); box-shadow:var(--shadow); color:var(--ink)}
-  button.big{font-size:1.4rem; padding:16px 22px; border-radius:18px}
+
+  header{
+    position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center; padding:12px 16px;
+  }
+  header h1{margin:0; font-size:1.2rem}
+  .shell{max-width:980px; margin:0 auto; padding:10px 16px}
+
+  /* Top controls */
+  .controls{
+    position:sticky; top:56px; z-index:40; background:var(--bg); border-bottom:1px solid var(--border);
+  }
+  .bar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 0}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:10px}
+
+  button{appearance:none; border:none; border-radius:14px; padding:12px 16px; font-size:1.05rem; background:#fff; border:1px solid var(--border); box-shadow:var(--shadow); color:var(--ink)}
+  button.big{font-size:1.25rem; padding:14px 18px; border-radius:18px}
   button.primary{background:var(--focus); color:#fff; border-color:transparent}
   button.mute{background:#f2f4f8}
   button:active{transform:scale(0.98)}
-  input[type="number"]{
-    font-size:1.2rem; padding:10px 12px; border-radius:12px; border:2px solid var(--border); width:110px; box-shadow:var(--shadow);
-  }
+  .seg{display:flex; background:#f2f4f8; border-radius:14px; overflow:hidden; border:1px solid var(--border)}
+  .seg-btn{appearance:none; border:none; padding:10px 12px; font-weight:700; background:transparent}
+  .seg-btn.active{background:#fff; color:var(--focus)}
+  .counter{display:flex; align-items:center; gap:6px}
+  .counter button{width:48px; height:48px; font-size:1.4rem}
+  .value{min-width:64px; height:48px; background:#fff; border:2px solid var(--border); border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800}
+  input[type="number"]{font-size:1.1rem; padding:8px 10px; border-radius:12px; border:2px solid var(--border); width:100px; background:#fff}
 
-  .stage{padding:12px 16px}
-  .equation{display:flex; align-items:center; justify-content:center; gap:16px; font-size:2rem; padding:12px; flex-wrap:wrap}
-  .num-display{min-width:84px; min-height:84px; display:flex; align-items:center; justify-content:center; background:white; border:2px solid var(--border); border-radius:20px; box-shadow:var(--shadow); font-weight:800}
-  .op,.equals{min-width:48px; text-align:center}
+  /* Stage */
+  .stage{padding-top:10px}
+  .equation{display:flex; align-items:center; justify-content:center; gap:12px; font-size:1.8rem; padding:10px; flex-wrap:wrap}
+  .num-display{min-width:74px; min-height:74px; display:flex; align-items:center; justify-content:center; background:white; border:2px solid var(--border); border-radius:16px; box-shadow:var(--shadow); font-weight:800}
+  .op,.equals{min-width:40px; text-align:center}
 
-  .counter-row{display:flex; gap:12px; justify-content:center; align-items:center; padding:10px; flex-wrap:wrap}
-  .counter{display:flex; align-items:center; gap:8px}
-  .counter button{width:54px; height:54px; font-size:1.6rem}
-  .counter .value{min-width:68px; height:54px; background:white; border:2px solid var(--border); border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:800; box-shadow:var(--shadow)}
-  .input-wrap{display:flex; align-items:center; gap:8px}
+  .area{display:flex; justify-content:center; gap:18px; padding:10px 0 24px 0; flex-wrap:wrap}
+  .group{flex:1 1 280px; min-width:260px; max-width:420px; background:#fff; border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px}
+  .group h3{margin:0 0 6px 0; font-size:0.98rem; color:var(--muted)}
+  .blocks{display:flex; flex-wrap:wrap; gap:8px; min-height:60px; padding:6px}
 
-  .area{display:flex; justify-content:center; gap:24px; padding:10px; flex-wrap:wrap}
-  .group{flex:1 1 280px; min-width:260px; max-width:420px; background:#fff; border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; position:relative}
-  .group h3{margin:0 0 6px 0; font-size:1.02rem; color:var(--muted)}
-  .blocks{display:flex; flex-wrap:wrap; gap:8px; min-height:64px; padding:6px}
-
-  /* Blocks: all squares (value=1) */
-  .block{width:44px; height:44px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1)}
-  /* one-digit color classes */
+  /* blocks: all squares */
+  .block{width:42px; height:42px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+  /* ones color */
   .b-red{background:var(--red)}
   .b-orange{background:var(--orange)}
   .b-yellow{background:var(--yellow)}
@@ -65,211 +78,152 @@
   .b-gray-light{background:var(--gray-light)}
   .b-gray{background:var(--gray)}
   .b-gray-dark{background:var(--gray-dark)}
-  /* tens grouping styles (still value=1 per block) */
+  /* groups */
   .b-ten{background:#fff; border:6px solid var(--ten-border)}
   .b-twenty{background:var(--twenty-bg); border:6px solid var(--twenty-border)}
 
-  /* Animations */
-  .bounce-in{animation:bounceIn 380ms ease-out}
-  @keyframes bounceIn{0%{transform:scale(0.6); opacity:0}60%{transform:scale(1.08); opacity:1}100%{transform:scale(1)}}
-  .fade-out{animation:fadeOut 420ms ease-in forwards}
-  @keyframes fadeOut{to{transform:translateY(-6px) scale(0.9); opacity:0}}
-  .shake{animation:shake 400ms ease-in-out}
-  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  /* animations */
+  .bounce-in{animation:bounceIn 360ms ease-out}
+  @keyframes bounceIn{0%{transform:scale(0.6); opacity:0}60%{transform:scale(1.06); opacity:1}100%{transform:scale(1)}}
 
-  /* Challenge */
-  .challenge{padding:14px}
-  .qheader{display:flex; justify-content:center; gap:12px; align-items:center; flex-wrap:wrap}
-  .qtext{font-size:1.4rem; text-align:center; margin:6px 0}
-  .choices{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; align-items:center}
-  .choice-input{display:flex; align-items:center; gap:8px}
-  .choice-input input[type="number"]{width:140px; font-size:1.6rem}
-  .choice-input button{width:58px; height:58px; font-size:1.6rem}
-  .score{display:flex; gap:6px; justify-content:center; padding:6px}
-  .star{font-size:1.3rem; color:#f5b301}
-  .progress{font-size:1rem; color:var(--muted)}
-
-  /* Marks (big circle / big X) overlay */
-  .overlay{position:fixed; inset:0; pointer-events:none; display:flex; align-items:center; justify-content:center; z-index:1000}
-  .mark{position:absolute; width:280px; height:280px; opacity:0; transform:scale(0.6)}
+  /* overlay: marks & confetti & reward */
+  .overlay{position:fixed; inset:0; pointer-events:none; z-index:1000}
+  .mark{position:absolute; left:50%; top:45%; transform:translate(-50%,-50%) scale(0.6); width:300px; height:300px; opacity:0}
   .mark.show{animation:markPop 700ms ease-out forwards}
-  @keyframes markPop{0%{opacity:0; transform:scale(0.6)}40%{opacity:1; transform:scale(1.05)}100%{opacity:1; transform:scale(1)}}
-  .mark.correct{border:18px solid var(--red); border-radius:50%}
+  @keyframes markPop{0%{opacity:0; transform:translate(-50%,-50%) scale(0.6)}40%{opacity:1; transform:translate(-50%,-50%) scale(1.06)}100%{opacity:1; transform:translate(-50%,-50%) scale(1)}}
+  .mark.correct{border:20px solid var(--ok); border-radius:50%; background:transparent}
   .mark.wrong::before, .mark.wrong::after{
-    content:""; position:absolute; left:50%; top:50%; width:18px; height:280px; background:#1e88e5; transform-origin:center;
+    content:""; position:absolute; left:50%; top:50%; width:22px; height:320px; background:var(--ng); transform-origin:center;
   }
   .mark.wrong::before{transform:translate(-50%,-50%) rotate(45deg)}
   .mark.wrong::after{transform:translate(-50%,-50%) rotate(-45deg)}
 
-  /* Confetti fountain */
-  .confetti{position:fixed; bottom:-6px; left:50%; width:8px; height:16px; transform:translateX(-50%); opacity:0.9; border-radius:2px; z-index:999}
-  .confetti.anim{animation:confettiUp 900ms ease-out forwards}
-  @keyframes confettiUp{
-    0%{transform:translate(-50%,0) rotate(0deg); opacity:1}
-    70%{opacity:1}
-    100%{transform:translate(calc(-50% + var(--dx)), calc(-120px - var(--dy))) rotate(var(--rot)); opacity:0}
+  .confetti{position:fixed; bottom:-8px; width:9px; height:18px; opacity:0.95; border-radius:2px; z-index:1001}
+  .confetti.fly{animation:confettiFly 1200ms ease-out forwards}
+  @keyframes confettiFly{
+    0%{transform:translate(var(--x0), var(--y0)) rotate(0deg); opacity:1}
+    100%{transform:translate(var(--x1), var(--y1)) rotate(var(--rot)); opacity:0}
   }
 
-  /* Accessibility */
+  /* reward stamp */
+  .reward{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.25)}
+  .reward .box{
+    pointer-events:auto; background:#fff; border-radius:18px; padding:24px; border:4px solid #eee; text-align:center;
+    box-shadow:0 18px 40px rgba(0,0,0,0.2);
+  }
+  .stamp{
+    display:inline-flex; align-items:center; justify-content:center; width:220px; height:220px; border:10px solid #ff8c00;
+    border-radius:18px; background:#fffaf0; font-size:7rem; margin-bottom:12px; box-shadow:inset 0 0 0 6px rgba(255,140,0,0.2);
+  }
+  .reward button{pointer-events:auto}
+
   .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
-  .help{padding:12px; color:var(--muted); font-size:0.95rem}
-  .pill{padding:10px 14px; border-radius:999px; background:#eef3ff; color:#1946b8; font-weight:700; border:1px solid #dbe7ff}
 </style>
 </head>
 <body>
 <header>
   <h1>みんなのさんすう</h1>
-  <div class="tagline">たしざん・ひきざんを、みて・さわって学ぼう</div>
+  <div style="color:#667">みて・さわって学ぼう</div>
 </header>
 
-<div class="shell">
-  <!-- Mode Switch -->
-  <div class="card">
-    <div class="toolbar" role="tablist" aria-label="モード切替">
-      <div class="seg" aria-label="学ぶ／チャレンジ">
-        <button class="seg-btn active" id="tab-learn" role="tab" aria-selected="true">まなぶ</button>
-        <button class="seg-btn" id="tab-challenge" role="tab" aria-selected="false">チャレンジ</button>
-      </div>
-      <div class="spacer"></div>
-      <button id="resetBtn" class="pill">リセット</button>
-    </div>
-  </div>
-
-  <!-- Learn Mode -->
-  <section id="learn" class="card stage" role="region" aria-label="まなぶモード">
-    <div class="equation" aria-live="polite">
-      <div class="num-display" id="numA" aria-label="はじめの かず">3</div>
-      <div class="op" id="opText">＋</div>
-      <div class="num-display" id="numB" aria-label="つぎの かず">2</div>
-      <div class="equals">＝</div>
-      <div class="num-display" id="numAns">5</div>
-    </div>
-
-    <div class="counter-row" aria-label="かずのせってい">
+<div class="controls">
+  <div class="shell">
+    <!-- Top input area (all inputs here) -->
+    <div id="topLearn" class="bar card" aria-label="上部入力（学ぶ）">
       <div class="counter" aria-label="はじめのかず">
-        <button class="big" id="aMinus">−</button>
+        <button id="aMinus">−</button>
         <div class="value" id="aValue">3</div>
-        <button class="big" id="aPlus">＋</button>
-        <div class="input-wrap">
-          <label class="sr-only" for="aInput">はじめのかず 文字入力</label>
-          <input id="aInput" type="number" min="0" max="40" value="3" />
-        </div>
+        <button id="aPlus">＋</button>
+        <input id="aInput" type="number" min="0" max="40" value="3" aria-label="はじめのかず 文字入力" />
       </div>
-      <div class="seg" aria-label="たす・ひく の えらびかた">
+
+      <div class="seg" aria-label="たしざん・ひきざん">
         <button class="seg-btn active" id="opAdd">たしざん</button>
         <button class="seg-btn" id="opSub">ひきざん</button>
       </div>
+
       <div class="counter" aria-label="つぎのかず">
-        <button class="big" id="bMinus">−</button>
+        <button id="bMinus">−</button>
         <div class="value" id="bValue">2</div>
-        <button class="big" id="bPlus">＋</button>
-        <div class="input-wrap">
-          <label class="sr-only" for="bInput">つぎのかず 文字入力</label>
-          <input id="bInput" type="number" min="0" max="40" value="2" />
-        </div>
+        <button id="bPlus">＋</button>
+        <input id="bInput" type="number" min="0" max="40" value="2" aria-label="つぎのかず 文字入力" />
       </div>
-    </div>
 
-    <div class="area">
-      <div class="group">
-        <h3>はじめの かず</h3>
-        <div class="blocks" id="groupA" aria-label="はじめの かず の ブロック"></div>
-      </div>
-      <div class="group">
-        <h3><span id="middleTitle">つぎの かず（たす）</span></h3>
-        <div class="blocks" id="groupB" aria-label="つぎの かず の ブロック"></div>
-      </div>
-      <div class="group">
-        <h3>こたえ</h3>
-        <div class="blocks" id="groupAns" aria-label="こたえ の ブロック"></div>
-      </div>
-    </div>
+      <button id="playBtn" class="primary">▶︎ アニメーション</button>
+      <button id="clearAns" class="mute">こたえ クリア</button>
 
-    <div class="play-row">
-      <button id="playBtn" class="primary big">▶︎ みてみよう</button>
-      <button id="clearAns" class="mute">こたえを けす</button>
-    </div>
+      <span style="flex:1"></span>
 
-    <div class="help">
-      「たしざん」はブロックが いっしょになって こたえになります。  
-      「ひきざん」は はじめのブロックから「とる かず」が へって、のこりが こたえです。  
-      10や20は、特別なふちのブロックで まとまりを しめします。
-    </div>
-  </section>
-
-  <!-- Challenge Mode -->
-  <section id="challenge" class="card challenge" role="region" aria-label="チャレンジモード" style="display:none">
-    <div class="qheader">
-      <div class="seg" aria-label="出題タイプ">
+      <!-- Challenge pre-start options (ここで選択。開始後は非表示） -->
+      <div class="seg" aria-label="出題タイプ" id="typeSeg">
         <button class="seg-btn active" id="typeAdd">たし算</button>
         <button class="seg-btn" id="typeSub">ひき算</button>
         <button class="seg-btn" id="typeBoth">りょうほう</button>
       </div>
-      <div class="seg" aria-label="むずかしさ">
+      <div class="seg" aria-label="むずかしさ" id="diffSeg">
         <button class="seg-btn active" id="diffEasy">かんたん</button>
         <button class="seg-btn" id="diffNormal">ふつう</button>
         <button class="seg-btn" id="diffHard">むずかしい</button>
       </div>
-      <div class="progress" id="progressText">1 / 5 問</div>
+      <button id="startChallenge" class="big">チャレンジ開始</button>
     </div>
 
-    <div class="qtext" id="qtext">もんだいが はじまるよ！</div>
-    <div class="equation">
-      <div class="num-display" id="cA">?</div>
-      <div class="op" id="cOp">＋</div>
-      <div class="num-display" id="cB">?</div>
-      <div class="equals">＝</div>
-      <div class="num-display" id="cAns">？</div>
-    </div>
-
-    <div class="area">
-      <div class="group">
-        <h3>はじめの かず</h3>
-        <div class="blocks" id="cGroupA"></div>
-      </div>
-      <div class="group">
-        <h3 id="cMiddleTitle">つぎの かず（たす）</h3>
-        <div class="blocks" id="cGroupB"></div>
-      </div>
-      <div class="group">
-        <h3>こたえ</h3>
-        <div class="blocks" id="cGroupAns"></div>
-      </div>
-    </div>
-
-    <div class="choices">
-      <div class="choice-input" aria-label="こたえ">
-        <button id="ansMinus" class="big">−</button>
+    <!-- Top input area (challenge answering only) -->
+    <div id="topChallenge" class="bar card" style="display:none" aria-label="上部入力（チャレンジ回答）">
+      <div style="font-weight:700">チャレンジ：<span id="progressText">1 / 5</span></div>
+      <div class="counter" aria-label="こたえ">
+        <button id="ansMinus">−</button>
         <input id="ansInput" type="number" min="0" max="40" value="0" />
-        <button id="ansPlus" class="big">＋</button>
+        <button id="ansPlus">＋</button>
       </div>
-      <button id="submitAns" class="primary big">こたえを きめる</button>
-      <button id="nextQ" class="big" disabled>つぎの もんだい</button>
+      <button id="submitAns" class="primary">こたえを きめる</button>
+      <button id="cancelChallenge" class="mute">やめる</button>
+      <div id="score" style="margin-left:auto; font-size:1.1rem; color:#f5b301"></div>
     </div>
-
-    <div class="score" id="score"></div>
-    <div class="help">
-      5問にちょうせん！ 正解すると、赤い〇と紙ふぶきがでるよ。まちがえると、青い✕がでるよ。  
-      5問おわると、ごほうびスタンプが あらわれます。
-    </div>
-  </section>
+  </div>
 </div>
 
-<!-- Overlay for marks and confetti -->
+<div class="shell stage">
+  <!-- shared equation and groups -->
+  <div class="equation">
+    <div class="num-display" id="numA">3</div>
+    <div class="op" id="opText">＋</div>
+    <div class="num-display" id="numB">2</div>
+    <div class="equals">＝</div>
+    <div class="num-display" id="numAns">5</div>
+  </div>
+
+  <div class="area">
+    <div class="group">
+      <h3>はじめの かず</h3>
+      <div class="blocks" id="groupA"></div>
+    </div>
+    <div class="group">
+      <h3 id="middleTitle">つぎの かず（たす）</h3>
+      <div class="blocks" id="groupB"></div>
+    </div>
+    <div class="group">
+      <h3>こたえ</h3>
+      <div class="blocks" id="groupAns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- overlay for marks/confetti/reward -->
 <div id="overlay" class="overlay" aria-hidden="true"></div>
 
 <script>
 (function(){
   // ====== State ======
   const state = {
-    a:3, b:2, op:'add', // learn mode
+    a:3, b:2, op:'add',
+    max:40,
     // Challenge
-    type:'add', // 'add' | 'sub' | 'both'
-    diff:'easy', // 'easy' | 'normal' | 'hard'
-    roundLen:5,
-    qIndex:0,
-    current:{a:0,b:0,op:'add',answer:0},
-    score:0
+    cRunning:false,
+    cType:'add', // 'add' | 'sub' | 'both'
+    cDiff:'easy', // 'easy'|'normal'|'hard'
+    cLen:5, cIdx:0, cScore:0, cSeen:new Set(), // seen keys
+    cQ:{a:0,b:0,op:'add',answer:0}
   };
 
   // ====== Elements ======
@@ -282,6 +236,8 @@
   const groupB = document.getElementById('groupB');
   const groupAns = document.getElementById('groupAns');
 
+  // top learn
+  const topLearn = document.getElementById('topLearn');
   const aMinus = document.getElementById('aMinus');
   const aPlus  = document.getElementById('aPlus');
   const bMinus = document.getElementById('bMinus');
@@ -292,42 +248,28 @@
   const bInput = document.getElementById('bInput');
   const opAdd  = document.getElementById('opAdd');
   const opSub  = document.getElementById('opSub');
-
   const playBtn = document.getElementById('playBtn');
   const clearAns = document.getElementById('clearAns');
-  const resetBtn = document.getElementById('resetBtn');
 
-  const tabLearn = document.getElementById('tab-learn');
-  const tabChallenge = document.getElementById('tab-challenge');
-  const sectionLearn = document.getElementById('learn');
-  const sectionChallenge = document.getElementById('challenge');
-
-  // Challenge elems
+  // challenge selectors (pre-start)
   const typeAdd = document.getElementById('typeAdd');
   const typeSub = document.getElementById('typeSub');
   const typeBoth = document.getElementById('typeBoth');
   const diffEasy = document.getElementById('diffEasy');
   const diffNormal = document.getElementById('diffNormal');
   const diffHard = document.getElementById('diffHard');
+  const startChallenge = document.getElementById('startChallenge');
+
+  // top challenge
+  const topChallenge = document.getElementById('topChallenge');
   const progressText = document.getElementById('progressText');
-
-  const cA = document.getElementById('cA');
-  const cB = document.getElementById('cB');
-  const cOp = document.getElementById('cOp');
-  const cAns = document.getElementById('cAns');
-  const cGroupA = document.getElementById('cGroupA');
-  const cGroupB = document.getElementById('cGroupB');
-  const cGroupAns = document.getElementById('cGroupAns');
-  const cMiddleTitle = document.getElementById('cMiddleTitle');
-  const qtext = document.getElementById('qtext');
-
   const ansMinus = document.getElementById('ansMinus');
   const ansPlus = document.getElementById('ansPlus');
   const ansInput = document.getElementById('ansInput');
   const submitAns = document.getElementById('submitAns');
-  const nextQ = document.getElementById('nextQ');
-
+  const cancelChallenge = document.getElementById('cancelChallenge');
   const scoreEl = document.getElementById('score');
+
   const overlay = document.getElementById('overlay');
 
   // ====== Helpers ======
@@ -335,36 +277,10 @@
   const calcAns = ()=> state.op==='add' ? state.a+state.b : state.a-state.b;
   const calcLabel = ()=> state.op==='add' ? 'つぎの かず（たす）' : 'とる かず（ひく）';
 
-  function clearBlocks(el){ while(el.firstChild) el.removeChild(el.firstChild); }
-  function makeBlock(classList=[]){
-    const d = document.createElement('div');
-    d.className = 'block';
-    classList.forEach(c=>d.classList.add(c));
-    return d;
-  }
+  function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+  function makeBlock(classList=[]){ const d=document.createElement('div'); d.className='block'; classList.forEach(c=>d.classList.add(c)); return d; }
 
-  // Build blocks per spec: use 20-group, 10-group, then ones coloring
-  function buildBlocks(container, n){
-    clearBlocks(container);
-    let remain = n;
-    // 20-groups
-    while(remain >= 20){
-      for(let i=0;i<20;i++){ container.appendChild(makeBlock(['b-twenty'])); }
-      remain -= 20;
-    }
-    // 10-groups
-    if(remain >= 10){
-      for(let i=0;i<10;i++){ container.appendChild(makeBlock(['b-ten'])); }
-      remain -= 10;
-    }
-    // Ones (1-9) coloring logic
-    if(remain > 0){
-      const onesBlocks = onesColorBlocks(remain);
-      onesBlocks.forEach(cls => container.appendChild(makeBlock([cls])));
-    }
-  }
-
-  // One-digit color mapping with ordered sequences for 7 and 9
+  // color mapping for ones 1..9
   function onesColorBlocks(n){
     const map = {
       1:['b-red'],
@@ -380,9 +296,25 @@
     return map[n] || [];
   }
 
-  // Render Learn Mode UI
+  // build blocks per N (20→10→ones)
+  function buildBlocks(container, n){
+    clear(container);
+    let r=n;
+    while(r>=20){ for(let i=0;i<20;i++) container.appendChild(makeBlock(['b-twenty'])); r-=20; }
+    if(r>=10){ for(let i=0;i<10;i++) container.appendChild(makeBlock(['b-ten'])); r-=10; }
+    if(r>0){ onesColorBlocks(r).forEach(cls=> container.appendChild(makeBlock([cls])) ); }
+  }
+
+  // convenience: snapshot class list of blocks for original-number coloring
+  function getBlockClassesForNumber(n){
+    const temp=document.createElement('div');
+    buildBlocks(temp,n);
+    return Array.from(temp.children).map(el=> Array.from(el.classList));
+  }
+
+  // ====== Rendering (Learn) ======
   function renderLearn(){
-    // For subtraction, prevent negative
+    // keep valid subtraction
     if(state.op==='sub' && state.b>state.a) state.b=state.a;
 
     aValue.textContent = state.a; bValue.textContent = state.b;
@@ -395,282 +327,146 @@
 
     buildBlocks(groupA, state.a);
     buildBlocks(groupB, state.b);
-    clearBlocks(groupAns); // answer is built by animation or reset
+    clear(groupAns);
   }
 
-  // ====== Animations (visual explanation) ======
+  // ====== Move Clone Utility ======
   function wait(ms){ return new Promise(res=>setTimeout(res,ms)); }
-  async function moveClone(sourceBlock, targetContainer){
-    const rect = sourceBlock.getBoundingClientRect();
+  async function moveCloneFromTo(sourceBlock, targetContainer, place='append'){
+    const sRect = sourceBlock.getBoundingClientRect();
     const tRect = targetContainer.getBoundingClientRect();
+
     const clone = sourceBlock.cloneNode(true);
-    clone.style.position = 'fixed';
-    clone.style.left = rect.left + 'px';
-    clone.style.top  = rect.top  + 'px';
-    clone.style.zIndex = 9999;
-    clone.style.transition = 'transform 360ms ease-in-out, opacity 360ms ease-in-out';
+    clone.style.position='fixed';
+    clone.style.left = sRect.left+'px';
+    clone.style.top  = sRect.top +'px';
+    clone.style.zIndex= 9999;
+    clone.style.transition='transform 380ms ease-in-out, opacity 200ms ease-in-out';
     document.body.appendChild(clone);
-    const dx = (tRect.left + 16 + Math.random()*24) - rect.left;
-    const dy = (tRect.top  + 16 + Math.random()*24) - rect.top;
+
+    // destination: near the "end" of target
+    const pad=14;
+    const dx = (tRect.left + (tRect.width - pad*2)*Math.random() + pad) - sRect.left;
+    const dy = (tRect.top  + 12 + Math.random()*24) - sRect.top;
     requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.96)`; });
-    await wait(360);
+    await wait(380);
     clone.style.opacity='0';
     await wait(120);
     clone.remove();
+
+    // add a real block next to already displayed (append)
+    const real = sourceBlock.cloneNode(true); // keep original classes (元の数字のまま)
+    real.classList.add('bounce-in');
+    if(place==='append') targetContainer.appendChild(real);
+    else if(place==='prepend') targetContainer.prepend(real);
+    return real;
   }
 
-  async function animateAdd(){
-    clearBlocks(groupAns);
-    // Move B then A blocks visually
-    const moveBlocks = async (source)=>{
-      const blocks = Array.from(source.querySelectorAll('.block'));
-      for(const b of blocks){
-        await moveClone(b, groupAns);
-        const rb = makeBlock(['b-sky']); // temporary bounce marker
-        rb.classList.add('bounce-in');
-        groupAns.appendChild(rb);
-        await wait(60);
+  // ====== Animations per要件 ======
+  async function animateAdd_Learn(A, B){
+    // Show A/B blocks (ensured by renderLearn), Answer: accumulate next to existing
+    clear(groupAns);
+    const bBlocks = Array.from(groupB.children);
+    const aBlocks = Array.from(groupA.children);
+
+    // move B left->right then A; keep their original classes
+    for(const b of bBlocks){ await moveCloneFromTo(b, groupAns, 'append'); await wait(40); }
+    for(const a of aBlocks){ await moveCloneFromTo(a, groupAns, 'append'); await wait(40); }
+
+    // recolor entire answer to (A+B) spec
+    await wait(120);
+    buildBlocks(groupAns, A+B);
+
+    // restore A/B (再表示)
+    buildBlocks(groupA, A);
+    buildBlocks(groupB, B);
+  }
+
+  async function animateSub_Learn(A, B){
+    // 1) put all A into answer (Aの配色)
+    clear(groupAns);
+    const aClasses = getBlockClassesForNumber(A);
+    aClasses.forEach(cls => groupAns.appendChild(makeBlock(cls)));
+
+    // 2) move B blocks (左→右) and remove from answer 右端
+    const bBlocks = Array.from(groupB.children);
+    const take = Math.min(B, aClasses.length);
+    for(let i=0;i<take;i++){
+      const bSrc = bBlocks[i];
+      // move clone (元のB色のまま)
+      await moveCloneFromTo(bSrc, groupAns, 'append');
+      // 右端から1つ消去
+      const last = groupAns.lastElementChild;
+      if(last){ last.classList.add('bounce-in'); } // just added
+      const toRemove = groupAns.lastElementChild; // remove the current rightmost AFTER add? 要件は「右側から消去」
+      if(groupAns.children.length>0){
+        const removeIdx = groupAns.children.length-1; // 右端
+        const rem = groupAns.children[removeIdx];
+        rem.style.transition='transform 260ms ease-in, opacity 260ms ease-in';
+        rem.style.transform='scale(0.7)'; rem.style.opacity='0';
+        await wait(260);
+        rem.remove();
       }
-    };
-    await moveBlocks(groupB);
-    await moveBlocks(groupA);
-    // Rebuild answer to spec
-    await wait(160);
-    buildBlocks(groupAns, state.a + state.b);
-  }
+      await wait(40);
+    }
 
-  async function animateSub(){
-    clearBlocks(groupAns);
-    // Remove B blocks from A (first B blocks)
-    const aBlocks = Array.from(groupA.querySelectorAll('.block'));
-    const toRemove = Math.min(state.b, aBlocks.length);
-    for(let i=0;i<toRemove;i++){
-      const b = aBlocks[i];
-      b.style.outline='3px solid #1e88e5'; b.style.outlineOffset='-2px';
-      await wait(120);
-      b.classList.add('fade-out');
-      await wait(420);
-      b.remove();
-    }
-    const remain = groupA.querySelectorAll('.block').length;
-    // Show interim bounce
-    for(let i=0;i<Math.min(remain,6);i++){
-      const rb = makeBlock(['b-green']); rb.classList.add('bounce-in'); groupAns.appendChild(rb); await wait(40);
-    }
-    await wait(160);
+    // 3) recolor remaining to (A-B) 配色
+    await wait(120);
+    const remain = A - B;
     buildBlocks(groupAns, remain);
+
+    // 4) restore A/B（再表示）
+    buildBlocks(groupA, A);
+    buildBlocks(groupB, B);
   }
 
-  // ====== Marks & Confetti & Sounds ======
-  function showMark(type){ // 'correct' or 'wrong'
-    overlay.innerHTML = '';
-    const mark = document.createElement('div');
-    mark.className = 'mark ' + (type==='correct' ? 'correct' : 'wrong') + ' show';
+  // ====== Effects (〇✕ / Confetti / Sounds / Reward) ======
+  function showMark(type){ // 'ok'|'ng'
+    overlay.innerHTML='';
+    const mark=document.createElement('div');
+    mark.className='mark ' + (type==='ok' ? 'correct' : 'wrong') + ' show';
     overlay.appendChild(mark);
-    // Auto remove
     setTimeout(()=>{ overlay.innerHTML=''; }, 1200);
   }
 
-  function fountainConfetti(){
-    const colors = ['#ff4d4f','#ff8c00','#ffd54a','#42c58a','#4aa3ff','#9c27b0','#ff1493','#00c2ff','#00e676'];
-    const count = 80;
-    for(let i=0;i<count;i++){
-      const c = document.createElement('div');
-      c.className='confetti anim';
-      const dx = (Math.random()*240 - 120) + 'px'; // spread left/right
-      const dy = (Math.random()*80) + 'px'; // additional height variation
-      const rot = (Math.random()*540 - 270) + 'deg';
-      c.style.setProperty('--dx', dx);
-      c.style.setProperty('--dy', dy);
-      c.style.setProperty('--rot', rot);
-      c.style.background = colors[i % colors.length];
-      document.body.appendChild(c);
-      setTimeout(()=> c.remove(), 1100);
-    }
-  }
-
-  // Simple success/failure sounds with Web Audio API
-  let audioCtx = null;
-  function beep(freq=440, dur=0.2, type='sine', vol=0.2){
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  let audioCtx=null;
+  function beep(freq=440, dur=0.2, type='sine', vol=0.22){
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = type; osc.frequency.value = freq;
     gain.gain.value = vol;
     osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start();
-    setTimeout(()=>{ osc.stop(); }, dur*1000);
+    osc.start(); setTimeout(()=>osc.stop(), dur*1000);
   }
-  function successSound(){
-    // little arpeggio
-    beep(523,0.12,'sine',0.18); setTimeout(()=>beep(659,0.12,'sine',0.18),130);
-    setTimeout(()=>beep(784,0.18,'sine',0.18),260);
-  }
-  function failSound(){
-    beep(220,0.18,'sawtooth',0.18); setTimeout(()=>beep(180,0.18,'sawtooth',0.18),200);
-  }
+  function successSound(){ beep(523,0.12,'sine',0.2); setTimeout(()=>beep(659,0.12,'sine',0.2),130); setTimeout(()=>beep(784,0.18,'sine',0.2),260); }
+  function failSound(){ beep(220,0.22,'sawtooth',0.2); setTimeout(()=>beep(180,0.22,'sawtooth',0.2),220); }
 
-  // ====== Learn Mode Events ======
-  const MAX = 40; // learn mode ceiling
-  aMinus.addEventListener('click', ()=>{ state.a = clamp(state.a-1,0,MAX); renderLearn(); });
-  aPlus .addEventListener('click', ()=>{ state.a = clamp(state.a+1,0,MAX); if(state.op==='sub' && state.b>state.a) state.b=state.a; renderLearn(); });
-  bMinus.addEventListener('click', ()=>{ state.b = clamp(state.b-1,0,MAX); renderLearn(); });
-  bPlus .addEventListener('click', ()=>{ state.b = clamp(state.b+1,0,MAX); if(state.op==='sub' && state.b>state.a) state.b=state.a; renderLearn(); });
-
-  aInput.addEventListener('change', ()=>{ state.a = clamp(parseInt(aInput.value||'0',10),0,MAX); if(state.op==='sub' && state.b>state.a) state.b=state.a; renderLearn(); });
-  bInput.addEventListener('change', ()=>{ state.b = clamp(parseInt(bInput.value||'0',10),0,MAX); renderLearn(); });
-
-  opAdd.addEventListener('click', ()=>{
-    state.op='add';
-    opAdd.classList.add('active'); opSub.classList.remove('active');
-    renderLearn();
-  });
-  opSub.addEventListener('click', ()=>{
-    state.op='sub';
-    opSub.classList.add('active'); opAdd.classList.remove('active');
-    if(state.b>state.a) state.b=state.a;
-    renderLearn();
-  });
-
-  playBtn.addEventListener('click', async ()=>{
-    playBtn.disabled = true;
-    if(state.op==='add'){ await animateAdd(); }
-    else{ await animateSub(); }
-    playBtn.disabled = false;
-  });
-  clearAns.addEventListener('click', ()=> clearBlocks(groupAns));
-  resetBtn.addEventListener('click', ()=>{
-    state.a=3; state.b=2; state.op='add';
-    aInput.value=3; bInput.value=2;
-    opAdd.classList.add('active'); opSub.classList.remove('active');
-    renderLearn();
-    clearBlocks(groupAns);
-  });
-
-  // ====== Tabs ======
-  function showLearn(){
-    tabLearn.classList.add('active'); tabChallenge.classList.remove('active');
-    tabLearn.setAttribute('aria-selected','true'); tabChallenge.setAttribute('aria-selected','false');
-    sectionLearn.style.display='block'; sectionChallenge.style.display='none';
-  }
-  function showChallenge(){
-    tabChallenge.classList.add('active'); tabLearn.classList.remove('active');
-    tabChallenge.setAttribute('aria-selected','true'); tabLearn.setAttribute('aria-selected','false');
-    sectionLearn.style.display='none'; sectionChallenge.style.display='block';
-    startRound();
-  }
-  tabLearn.addEventListener('click', showLearn);
-  tabChallenge.addEventListener('click', showChallenge);
-
-  // ====== Challenge Mode Logic ======
-  function setType(t){
-    state.type = t;
-    typeAdd.classList.toggle('active', t==='add');
-    typeSub.classList.toggle('active', t==='sub');
-    typeBoth.classList.toggle('active', t==='both');
-    startRound();
-  }
-  function setDiff(d){
-    state.diff = d;
-    diffEasy.classList.toggle('active', d==='easy');
-    diffNormal.classList.toggle('active', d==='normal');
-    diffHard.classList.toggle('active', d==='hard');
-    startRound();
-  }
-  typeAdd.addEventListener('click', ()=>setType('add'));
-  typeSub.addEventListener('click', ()=>setType('sub'));
-  typeBoth.addEventListener('click', ()=>setType('both'));
-  diffEasy.addEventListener('click', ()=>setDiff('easy'));
-  diffNormal.addEventListener('click', ()=>setDiff('normal'));
-  diffHard.addEventListener('click', ()=>setDiff('hard'));
-
-  function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-
-  function ranges(){
-    if(state.diff==='easy') return {A:[1,5], B:[0,5]};
-    if(state.diff==='normal') return {A:[1,10], B:[0,5]};
-    return {A:[1,10], B:[0,10]}; // hard
-  }
-
-  function pickOp(){
-    if(state.type==='add') return 'add';
-    if(state.type==='sub') return 'sub';
-    return Math.random()<0.5 ? 'add' : 'sub';
-  }
-
-  function makeQuestion(){
-    const {A:[aMin,aMax], B:[bMin,bMax]} = ranges();
-    let a = randInt(aMin,aMax);
-    let b = randInt(bMin,bMax);
-    const op = pickOp();
-    if(op==='sub' && b>a){ // avoid negative
-      [a,b] = [b,a];
-      if(a===0){ a=1; } // ensure at least 1 for A in subtraction
-    }
-    const ans = op==='add' ? (a+b) : (a-b);
-    state.current = {a,b,op,answer:ans};
-  }
-
-  function renderQuestion(){
-    const {a,b,op,answer} = state.current;
-    progressText.textContent = `${state.qIndex+1} / ${state.roundLen} 問`;
-    qtext.textContent = 'もんだい：よんで こたえを 入れてね';
-    cA.textContent = a; cB.textContent = b; cOp.textContent = op==='add'?'＋':'−';
-    cAns.textContent = '？';
-    cMiddleTitle.textContent = op==='add' ? 'つぎの かず（たす）' : 'とる かず（ひく）';
-    clearBlocks(cGroupA); clearBlocks(cGroupB); clearBlocks(cGroupAns);
-    buildBlocks(cGroupA, a);
-    buildBlocks(cGroupB, b);
-    ansInput.value = 0;
-    nextQ.disabled = true;
-    submitAns.disabled = false;
-  }
-
-  function renderScore(){
-    scoreEl.innerHTML = '';
-    for(let i=0;i<state.score;i++){
-      const s = document.createElement('span');
-      s.className='star'; s.textContent='★'; scoreEl.appendChild(s);
-    }
-  }
-
-  function startRound(){
-    state.qIndex = 0;
-    state.score = 0;
-    renderScore();
-    makeQuestion();
-    renderQuestion();
-  }
-
-  function onSubmit(){
-    const val = clamp(parseInt(ansInput.value||'0',10),0,40);
-    const ok = val===state.current.answer;
-    if(ok){
-      cAns.textContent = val;
-      showMark('correct');
-      fountainConfetti();
-      successSound();
-      // Show answer blocks with spec
-      buildBlocks(cGroupAns, val);
-      state.score = clamp(state.score+1, 0, state.roundLen);
-      renderScore();
-    }else{
-      showMark('wrong');
-      failSound();
-    }
-    submitAns.disabled = true;
-    nextQ.disabled = false;
-  }
-
-  function onNext(){
-    if(state.qIndex < state.roundLen-1){
-      state.qIndex++;
-      makeQuestion();
-      renderQuestion();
-    }else{
-      // End of round: reward stamp
-      showRewardStamp();
-      startRound();
+  function bigConfetti(){
+    // 画面いっぱいに拡散：画面下全幅＋中央噴水の複合
+    const colors=['#ff4d4f','#ff8c00','#ffd54a','#42c58a','#4aa3ff','#9c27b0','#ff1493','#00c2ff','#00e676'];
+    const W=window.innerWidth, H=window.innerHeight;
+    const total = Math.min(320, Math.floor(W*H/6000)+200); // 200〜320程度
+    for(let i=0;i<total;i++){
+      const c=document.createElement('div');
+      c.className='confetti fly';
+      // 起点（下端にランダムに並べる or 中央下）
+      const center = Math.random()<0.35;
+      const x0 = center ? W/2 : Math.random()*W;
+      const y0 = H - 6;
+      // 終点：上方にランダム散布
+      const spreadX = center ? (Math.random()*600-300) : (Math.random()*800-400);
+      const spreadY = -(Math.random()*H*0.9 + 120);
+      const rot = (Math.random()*720-360)+'deg';
+      c.style.setProperty('--x0', x0+'px');
+      c.style.setProperty('--y0', '0px');
+      c.style.setProperty('--x1', (x0+spreadX)+'px');
+      c.style.setProperty('--y1', (spreadY)+'px');
+      c.style.setProperty('--rot', rot);
+      c.style.left='0'; c.style.bottom='0';
+      c.style.background = colors[i%colors.length];
+      document.body.appendChild(c);
+      setTimeout(()=>c.remove(), 1400);
     }
   }
 
@@ -678,37 +474,213 @@
     '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍒','🍑','🥭','🍍','🥝','🍅','🥥',
     '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵'
   ];
-  function showRewardStamp(){
-    overlay.innerHTML = '';
-    const stamp = document.createElement('div');
-    stamp.style.position='absolute';
-    stamp.style.bottom='12%';
-    stamp.style.left='50%';
-    stamp.style.transform='translateX(-50%) scale(0.4)';
-    stamp.style.fontSize='8rem';
-    stamp.style.filter='drop-shadow(0 6px 18px rgba(0,0,0,0.2))';
+  function showReward(){
+    overlay.innerHTML='';
+    const wrap=document.createElement('div');
+    wrap.className='reward';
+    const box=document.createElement('div');
+    box.className='box';
+    const stamp=document.createElement('div');
+    stamp.className='stamp';
     stamp.textContent = stamps[Math.floor(Math.random()*stamps.length)];
-    overlay.appendChild(stamp);
-    // Celebrate with extra confetti
-    fountainConfetti();
-    setTimeout(()=>{ stamp.style.transition='transform 600ms ease-out'; stamp.style.transform='translateX(-50%) scale(1)'; }, 50);
-    setTimeout(()=>{ overlay.innerHTML=''; }, 2000);
+    const btn=document.createElement('button');
+    btn.className='big primary';
+    btn.textContent='やったね！';
+    btn.addEventListener('click', ()=>{ overlay.innerHTML=''; });
+    box.appendChild(stamp); box.appendChild(btn);
+    wrap.appendChild(box);
+    overlay.appendChild(wrap);
   }
 
-  // Challenge controls
-  ansMinus.addEventListener('click', ()=>{
-    ansInput.value = clamp(parseInt(ansInput.value||'0',10)-1,0,40);
+  // ====== Learn Controls ======
+  function syncDisplays(){
+    numA.textContent=state.a; numB.textContent=state.b; numAns.textContent=calcAns();
+    opText.textContent = state.op==='add'?'＋':'−';
+    middleTitle.textContent = calcLabel();
+  }
+
+  function setA(v){ state.a=clamp(v,0,state.max); if(state.op==='sub' && state.b>state.a) state.b=state.a; aValue.textContent=state.a; aInput.value=state.a; syncDisplays(); buildBlocks(groupA,state.a); buildBlocks(groupB,state.b); clear(groupAns); }
+  function setB(v){ state.b=clamp(v,0,state.max); if(state.op==='sub' && state.b>state.a) state.b=state.a; bValue.textContent=state.b; bInput.value=state.b; syncDisplays(); buildBlocks(groupA,state.a); buildBlocks(groupB,state.b); clear(groupAns); }
+
+  aMinus.addEventListener('click', ()=> setA(state.a-1));
+  aPlus .addEventListener('click', ()=> setA(state.a+1));
+  bMinus.addEventListener('click', ()=> setB(state.b-1));
+  bPlus .addEventListener('click', ()=> setB(state.b+1));
+  aInput.addEventListener('change', ()=> setA(parseInt(aInput.value||'0',10)));
+  bInput.addEventListener('change', ()=> setB(parseInt(bInput.value||'0',10)));
+
+  opAdd.addEventListener('click', ()=>{ state.op='add'; opAdd.classList.add('active'); opSub.classList.remove('active'); syncDisplays(); });
+  opSub.addEventListener('click', ()=>{ state.op='sub'; opSub.classList.add('active'); opAdd.classList.remove('active'); if(state.b>state.a) state.b=state.a; aInput.value=state.a; bInput.value=state.b; aValue.textContent=state.a; bValue.textContent=state.b; syncDisplays(); });
+
+  playBtn.addEventListener('click', async ()=>{
+    playBtn.disabled=true;
+    if(state.op==='add'){ await animateAdd_Learn(state.a, state.b); }
+    else{ await animateSub_Learn(state.a, state.b); }
+    playBtn.disabled=false;
   });
-  ansPlus.addEventListener('click', ()=>{
-    ansInput.value = clamp(parseInt(ansInput.value||'0',10)+1,0,40);
+  clearAns.addEventListener('click', ()=> clear(groupAns));
+
+  // ====== Challenge setup (pre-start selectors) ======
+  function setType(t){
+    state.cType=t;
+    typeAdd.classList.toggle('active',t==='add');
+    typeSub.classList.toggle('active',t==='sub');
+    typeBoth.classList.toggle('active',t==='both');
+  }
+  function setDiff(d){
+    state.cDiff=d;
+    diffEasy.classList.toggle('active',d==='easy');
+    diffNormal.classList.toggle('active',d==='normal');
+    diffHard.classList.toggle('active',d==='hard');
+  }
+  typeAdd.addEventListener('click',()=>setType('add'));
+  typeSub.addEventListener('click',()=>setType('sub'));
+  typeBoth.addEventListener('click',()=>setType('both'));
+  diffEasy.addEventListener('click',()=>setDiff('easy'));
+  diffNormal.addEventListener('click',()=>setDiff('normal'));
+  diffHard.addEventListener('click',()=>setDiff('hard'));
+
+  // ranges
+  function ranges(){
+    if(state.cDiff==='easy') return {A:[1,5], B:[0,5]};
+    if(state.cDiff==='normal') return {A:[1,10], B:[0,5]};
+    return {A:[1,10], B:[0,10]};
+  }
+  function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+  function keyFor(a,b,op){
+    if(op==='add'){ // (A,B)==(B,A)
+      const x=Math.min(a,b), y=Math.max(a,b);
+      return `add:${x},${y}`;
+    }else{ // subtraction ordered
+      return `sub:${a},${b}`;
+    }
+  }
+
+  function pickOp(){
+    if(state.cType==='add') return 'add';
+    if(state.cType==='sub') return 'sub';
+    return Math.random()<0.5?'add':'sub';
+  }
+
+  function makeUniqueQuestion(){
+    const {A:[aMin,aMax], B:[bMin,bMax]} = ranges();
+    // Precompute max attempts
+    const maxTry = 200;
+    for(let i=0;i<maxTry;i++){
+      let a=randInt(aMin,aMax);
+      let b=randInt(bMin,bMax);
+      const op = pickOp();
+      if(op==='sub' && b>a){ [a,b]=[b,a]; if(a===0)a=1; } // avoid negative
+      const k = state.cType==='both' ? `${op}:${a},${b}` : keyFor(a,b,op);
+      if(!state.cSeen.has(k)){
+        state.cSeen.add(k);
+        const ans = op==='add' ? a+b : a-b;
+        state.cQ={a,b,op,answer:ans};
+        return true;
+      }
+    }
+    return false; // fallback (rare)
+  }
+
+  function renderQuestion(){
+    const {a,b,op,answer}=state.cQ;
+    // put values onto stage (shared)
+    state.a=a; state.b=b; state.op=op;
+    syncDisplays();
+    buildBlocks(groupA, a);
+    buildBlocks(groupB, b);
+    clear(groupAns);
+    progressText.textContent = `${state.cIdx+1} / ${state.cLen}`;
+    ansInput.value = 0;
+    submitAns.disabled=false;
+  }
+
+  function renderScore(){
+    scoreEl.textContent = '★'.repeat(state.cScore);
+  }
+
+  function startChallengeRound(){
+    state.cRunning=true;
+    state.cIdx=0; state.cScore=0; state.cSeen.clear();
+    renderScore();
+    // UI switch
+    topLearn.style.display='none';
+    topChallenge.style.display='flex';
+    // lock/edit? learn inputs hidden already
+    if(!makeUniqueQuestion()){ /* ignore */ }
+    renderQuestion();
+  }
+
+  function stopChallenge(){
+    state.cRunning=false;
+    topChallenge.style.display='none';
+    topLearn.style.display='flex';
+    renderLearn();
+  }
+
+  async function animateForChallengeThenNext(ok){
+    if(!ok) return; // nothing
+    // 学ぶモードと同じアニメーション
+    if(state.cQ.op==='add'){
+      await animateAdd_Learn(state.cQ.a, state.cQ.b);
+    }else{
+      await animateSub_Learn(state.cQ.a, state.cQ.b);
+    }
+    await wait(3000); // 3秒後に次の問題
+    nextQuestionOrFinish();
+  }
+
+  function nextQuestionOrFinish(){
+    if(state.cIdx < state.cLen-1){
+      state.cIdx++;
+      if(!makeUniqueQuestion()){ /* fallback ignore */ }
+      renderQuestion();
+    }else{
+      // reward
+      showReward();
+      // reset for a new round (待機：ユーザー操作で閉じるまで表示維持）
+      state.cRunning=false;
+      topChallenge.style.display='none';
+      topLearn.style.display='flex';
+      renderLearn();
+    }
+  }
+
+  // ====== Challenge control events ======
+  startChallenge.addEventListener('click', startChallengeRound);
+  cancelChallenge.addEventListener('click', stopChallenge);
+  ansMinus.addEventListener('click', ()=>{ ansInput.value = clamp(parseInt(ansInput.value||'0',10)-1,0,state.max); });
+  ansPlus .addEventListener('click', ()=>{ ansInput.value = clamp(parseInt(ansInput.value||'0',10)+1,0,state.max); });
+
+  submitAns.addEventListener('click', async ()=>{
+    const val = clamp(parseInt(ansInput.value||'0',10),0,state.max);
+    const ok = val===state.cQ.answer;
+    if(ok){
+      numAns.textContent = val;
+      showMark('ok');
+      bigConfetti();
+      successSound();
+      state.cScore = clamp(state.cScore+1,0,state.cLen);
+      renderScore();
+      submitAns.disabled=true; // 正解後はロックして次へ（自動）
+      animateForChallengeThenNext(true);
+    }else{
+      showMark('ng');
+      failSound();
+      // 不正解時：再入力可（ロックしない）
+    }
   });
-  submitAns.addEventListener('click', onSubmit);
-  nextQ.addEventListener('click', onNext);
 
   // ====== Init ======
-  renderLearn();
-  // Preload audio context on user gesture
-  document.body.addEventListener('click', ()=>{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); }, {once:true});
+  function init(){
+    // initial selectors defaults
+    setType('add'); setDiff('easy');
+    renderLearn();
+    // Activate audio on first gesture
+    document.body.addEventListener('pointerdown', ()=>{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); }, {once:true});
+  }
+  init();
 })();
 </script>
 </body>
