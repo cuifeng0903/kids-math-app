@@ -1,15 +1,18 @@
 {
-  "name": "Kids Math App",
-  "short_name": "KidsMath",
-  "start_url": "./index.html",
+  "name": "みんなのさんすう - たしざん・ひきざん",
+  "short_name": "さんすう",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#f7f8fb",
-  "theme_color": "#6c5ce7",
+  "background_color": "#0b2340",
+  "theme_color": "#0b2340",
+  "lang": "ja",
+  "description": "幼児向けの足しざん・ひきざん学習アプリ。ブロックとアニメで視覚的に理解。",
   "icons": [
     {
       "src": "apple-touch-icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "sizes": "200x200",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
