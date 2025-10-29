@@ -39,7 +39,7 @@
   .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:10px 0}
   .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:10px}
 
-  .row1{font-size:1.05rem}
+  .row1{font-size:1.08rem}
   .row2{font-size:0.95rem}
 
   .label{font-weight:700}
@@ -49,6 +49,7 @@
   button.primary{background:var(--focus); color:#fff; border-color:transparent}
   button.mute{background:#f2f4f8}
   button:active{transform:scale(0.98)}
+  .big{font-size:1.15rem}
 
   .seg{display:flex; background:#f2f4f8; border-radius:14px; overflow:hidden; border:1px solid var(--border)}
   .seg-btn{appearance:none; border:none; padding:10px 12px; font-weight:700; background:transparent}
@@ -56,7 +57,7 @@
 
   /* selects */
   select{appearance:none; padding:10px 12px; border-radius:12px; border:2px solid var(--border); background:#fff;}
-  .big-select{font-size:1.25rem; min-width:110px}
+  .big-select{font-size:1.3rem; min-width:120px}
   .small-select{font-size:1.0rem; min-width:110px}
 
   /* Stage */
@@ -116,11 +117,11 @@
   .reward{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.25)}
   .reward .box{
     pointer-events:auto; background:#fff; border-radius:18px; padding:24px; border:4px solid #eee; text-align:center;
-    box-shadow:0 18px 40px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:12px; align-items:center;
+    box-shadow:0 18px 40px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:12px; align-items:center
   }
   .stamp{
     display:inline-flex; align-items:center; justify-content:center; width:220px; height:220px; border:10px solid #ff8c00;
-    border-radius:18px; background:#fffaf0; font-size:7rem; box-shadow:inset 0 0 0 6px rgba(255,140,0,0.2);
+    border-radius:18px; background:#fffaf0; font-size:7rem; box-shadow:inset 0 0 0 6px rgba(255,140,0,0.2)
   }
   .reward .btn-stack{display:flex; flex-direction:column; gap:10px; width:100%; align-items:center}
   .reward button{pointer-events:auto; min-width:180px}
@@ -136,7 +137,7 @@
 
 <div class="controls">
   <div class="shell">
-    <div class="card">
+    <div class="card" id="topLearnCard">
       <!-- 1段目 -->
       <div id="row1" class="row row1" aria-label="上段（学ぶ）">
         <!-- たしざん／ひきざん -->
@@ -256,7 +257,7 @@
   const groupAns = document.getElementById('groupAns');
 
   // top learn
-  const topLearnCard = document.querySelector('.controls .card');
+  const topLearnCard = document.getElementById('topLearnCard');
   const opAdd  = document.getElementById('opAdd');
   const opSub  = document.getElementById('opSub');
   const aSelect = document.getElementById('aSelect');
@@ -355,22 +356,41 @@
   // ====== Movement & Animation Utilities ======
   function wait(ms){ return new Promise(res=>setTimeout(res,ms)); }
 
-  // Move clone to a specific pixel position (center align)
-  async function moveCloneTo(sourceBlock, targetX, targetY, duration=420){
+  // Move "clone" to an absolute target; remove source immediately (left pack), then add real block to target
+  async function transferBlock(sourceBlock, targetX, targetY, place='append'){
+    // Create clone with same classes
     const sRect = sourceBlock.getBoundingClientRect();
     const clone = sourceBlock.cloneNode(true);
     clone.style.position='fixed';
     clone.style.left = (sRect.left)+'px';
     clone.style.top  = (sRect.top )+'px';
     clone.style.zIndex= 9999;
-    clone.style.transition=`transform ${duration}ms ease-in-out, opacity 200ms ease-in-out`;
+    clone.style.transition='transform 420ms ease-in-out, opacity 200ms ease-in-out';
     document.body.appendChild(clone);
 
+    // Remove source immediately (元の表示を消し、左詰めに)
+    sourceBlock.remove();
+
+    // Animate to target
     const dx = targetX - sRect.left;
     const dy = targetY - sRect.top;
     requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.96)`; });
-    await wait(duration);
-    return clone;
+    await wait(420);
+
+    // Add real block at target container
+    const real = clone.cloneNode(true);
+    real.style.position=''; real.style.left=''; real.style.top=''; real.style.transform='';
+    real.style.transition=''; real.style.zIndex='';
+    real.classList.add('bounce-in');
+    if(place==='append') groupAns.appendChild(real);
+    else groupAns.prepend(real);
+
+    // Remove clone
+    clone.style.opacity='0';
+    await wait(150);
+    clone.remove();
+
+    return real;
   }
 
   // Addition target position: to the right of current last block (or left edge if none)
@@ -380,7 +400,8 @@
     const last = groupAns.lastElementChild;
     if(last){
       const r = last.getBoundingClientRect();
-      return {x: r.right + 8 - 20, y: r.top + 6}; // right隣近傍
+      // right隣に置く座標（中央寄せ）
+      return {x: r.right + 8 - 20, y: r.top + 6};
     }else{
       return {x: aRect.left + pad, y: aRect.top + 6};
     }
@@ -429,26 +450,19 @@
   async function animateAdd_Learn(A, B){
     clear(groupAns);
 
-    // A 左から順 → 直前ブロックの右隣
-    const aBlocks = Array.from(groupA.children);
+    // A 左から順 → 直前ブロックの右隣（移動元は消去＆左詰め）
+    let aBlocks = Array.from(groupA.children);
     for(const src of aBlocks){
       const t = calcAddTargetRightOfPrev();
-      const clone = await moveCloneTo(src, t.x, t.y);
-      const real = src.cloneNode(true);
-      real.classList.add('bounce-in');
-      groupAns.appendChild(real); // 右隣（=末尾）に追加
-      clone.style.opacity='0'; await wait(150); clone.remove();
+      await transferBlock(src, t.x, t.y, 'append');
       await wait(40);
     }
-    // 次につぎのかず（B） 左から順 → 直前ブロックの右隣
-    const bBlocks = Array.from(groupB.children);
+
+    // B 左から順 → 直前ブロックの右隣（移動元は消去＆左詰め）
+    let bBlocks = Array.from(groupB.children);
     for(const src of bBlocks){
       const t = calcAddTargetRightOfPrev();
-      const clone = await moveCloneTo(src, t.x, t.y);
-      const real = src.cloneNode(true);
-      real.classList.add('bounce-in');
-      groupAns.appendChild(real);
-      clone.style.opacity='0'; await wait(150); clone.remove();
+      await transferBlock(src, t.x, t.y, 'append');
       await wait(40);
     }
 
@@ -461,34 +475,69 @@
     buildBlocks(groupB, B);
   }
 
-  async function animateSub_Learn(A, B){
-    // 1) こたえ欄に A をそのまま表示（A配色）
-    clear(groupAns);
+  // A全数を“一度に”こたえ欄へ移動するアニメ
+  async function animateMoveAllAtoAnswerOnce(A){
+    // 事前にAの配色クラスを保持
     const aClasses = getBlockClassesForNumber(A);
-    aClasses.forEach(cls => groupAns.appendChild(makeBlock(cls)));
 
-    // 2) つぎのかず（左から順）を こたえ欄右端に重ね → 両方消去（点線枠を一瞬表示、色は対象ブロック準拠）
+    // Aの各ブロックを同期的（同時）に移動：移動元は消去＆左詰め
+    const aBlocks = Array.from(groupA.children);
+    const aRect = groupAns.getBoundingClientRect();
+    const stepX = 50, stepY = 52; // レイアウト目安（2列程度に収まるように）
+    const promises = aBlocks.map((src, i)=>{
+      const col = i % Math.max(1, Math.floor(aRect.width/stepX));
+      const row = Math.floor(i / Math.max(1, Math.floor(aRect.width/stepX)));
+      const x = aRect.left + 12 + col*stepX;
+      const y = aRect.top + 6 + row*stepY;
+      return transferBlock(src, x, y, 'append');
+    });
+    await Promise.all(promises);
+
+    // こたえ欄をAの配色で正しく再構築（順序・色）
+    clear(groupAns);
+    aClasses.forEach(cls => groupAns.appendChild(makeBlock(cls)));
+  }
+
+  async function animateSub_Learn(A, B){
+    // 1) Aを“一度に”こたえ欄へ移動（元色のまま）
+    await animateMoveAllAtoAnswerOnce(A);
+
+    // 2) B 左から順：こたえ欄 右端へ重ね → 両方消去（点線枠は消えるこたえ欄ブロックの色）
     const bBlocks = Array.from(groupB.children);
     const take = Math.min(B, bBlocks.length);
     for(let i=0;i<take;i++){
       const src = bBlocks[i];
+      // 移動元を消して左詰め、クローン移動
       const targetPos = calcSubTargetOnRightmost();
-      const clone = await moveCloneTo(src, targetPos.x, targetPos.y);
+      // 右端対象（消去色確定のため先に取得）
       const last = groupAns.lastElementChild;
+      const sRect = src.getBoundingClientRect();
+      const clone = src.cloneNode(true);
+      clone.style.position='fixed';
+      clone.style.left = (sRect.left)+'px';
+      clone.style.top  = (sRect.top )+'px';
+      clone.style.zIndex= 9999;
+      clone.style.transition='transform 420ms ease-in-out, opacity 240ms ease-in-out';
+      document.body.appendChild(clone);
+      // 移動元消去＆左詰め
+      src.remove();
+      // 移動
+      const dx = targetPos.x - sRect.left;
+      const dy = targetPos.y - sRect.top;
+      requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(0.96)`; });
+      await wait(420);
+
       if(last){
-        // 点線枠（色＝右端ブロックの色／枠色）
+        // 点線枠（色合わせ）
         showDottedRectForBlock(last, 220);
-        // 消去アニメ（両方）
+        // 両方消去
         last.style.transition='transform 240ms ease-in, opacity 240ms ease-in';
         last.style.transform='scale(0.7)'; last.style.opacity='0';
-        clone.style.transition='transform 240ms ease-in, opacity 240ms ease-in';
         clone.style.transform='scale(0.7)'; clone.style.opacity='0';
         await wait(240);
         last.remove();
-        clone.remove();
-      }else{
-        clone.remove();
       }
+      clone.remove();
       await wait(40);
     }
 
@@ -570,7 +619,7 @@
     btn.textContent='やったね！';
     btn.addEventListener('click', ()=>{ overlay.innerHTML=''; });
 
-    btnStack.appendChild(btn); /* スタンプ直下・縦並び（将来ボタン追加にも対応） */
+    btnStack.appendChild(btn); /* スタンプ直下・縦並び */
     box.appendChild(stamp);
     box.appendChild(btnStack);
     wrap.appendChild(box);
@@ -757,4 +806,3 @@
 </script>
 </body>
 </html>
-``
