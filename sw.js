@@ -1,5 +1,5 @@
-// PWA Service Worker（GitHub Pages /kids-math-app/ 配下公開対応）
-const CACHE_NAME = 'mathkids-v1.1.2-20251031';
+// PWA Service Worker（GitHub Pages /kids-math-app/ 配下公開）
+const CACHE_NAME = 'mathkids-v1.1.3-20251031';
 const BASE = '/kids-math-app/';
 const ASSETS = [
   BASE,
@@ -22,23 +22,20 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.map((key) => (key !== CACHE_NAME) ? caches.delete(key) : null)))
+      .then((keys) => Promise.all(keys.map((k) => k !== CACHE_NAME ? caches.delete(k) : null)))
       .then(() => self.clients.claim())
   );
 });
 
-// HTMLナビゲーション：ネット優先→失敗時 index.html（オフラインでも動作）
+// ナビゲーションはネット優先→失敗時 index.html。その他はキャッシュ優先。
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req).catch(() => caches.match(BASE + 'index.html'))
     );
     return;
   }
-
-  // その他：キャッシュ優先
   event.respondWith(
     caches.match(req).then((res) => res || fetch(req))
   );
