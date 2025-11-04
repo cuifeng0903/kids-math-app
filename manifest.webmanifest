@@ -1,16 +1,30 @@
 {
-  "name": "みんなのさんすう - たしざん・ひきざん",
-  "short_name": "さんすう",
+  "id": "/kids-math-app/",
+  "name": "キッズ算数アプリ",
+  "short_name": "算数",
+  "lang": "ja",
+  "dir": "ltr",
+
   "start_url": "/kids-math-app/",
   "scope": "/kids-math-app/",
   "display": "standalone",
-  "background_color": "#0b2340",
-  "theme_color": "#0b2340",
-  "lang": "ja",
-  "description": "幼児向けの足しざん・ひきざん学習アプリ。ブロックとアニメで視覚的に理解。",
+  "orientation": "portrait",
+
+  "theme_color": "#ff6b6b",
+  "background_color": "#ffffff",
+
   "icons": [
-    { "src": "/kids-math-app/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
-    { "src": "/kids-math-app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/kids-math-app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    {
+      "src": "/kids-math-app/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/kids-math-app/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
