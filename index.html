@@ -1,159 +1,175 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <!-- 正規化済み head：人が読む本文は body 側／メタ・リンクのみ -->
+  <!-- 元仕様準拠のhead：メタ・リンクのみ／本文テキストはbody側 -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>みんなのさんすう - たしざん・ひきざん</title>
 
-  <!-- PWA -->
+  <!-- PWA（/kids-math-app/前提） -->
   <meta name="theme-color" content="#0b2340" />
   /kids-math-app/manifest.webmanifest
 
-  <!-- 主要アイコン（存在すれば使用） -->
+  <!-- アイコン（存在すれば読み込まれます） -->
   /kids-math-app/apple-touch-icon.png
   /kids-math-app/icon-192.png
   /kids-math-app/icon-512.png
 
   <style>
-    :root { --accent:#ff6b6b; --primary:#2e6df6; --bg:#fafafa; --border:#eee; --text:#333; --sum:#fedb7a; --sumBorder:#f9c94c; }
-    body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; color:var(--text); background:#fff; }
-    header { padding: 16px; background: #0b2340; color: #fff; }
-    main { padding: 16px; }
+    :root {
+      --bg:#fff; --panel:#fafafa; --border:#eee; --text:#333;
+      --primary:#2e6df6; --accent:#ff6b6b; --sum:#fedb7a; --sumBorder:#f9c94c;
+      --aColor:#ffd5d5; --aBorder:#ffb3b3;
+      --bColor:#d5ecff; --bBorder:#b3dbff;
+      --ansColor:#fedb7a; --ansBorder:#f9c94c;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; color:var(--text); background:var(--bg); }
+    header { background:#0b2340; color:#fff; }
+    .wrap { max-width:980px; margin:0 auto; padding:16px 20px; }
 
-    .km-container { max-width: 980px; margin: 0 auto; }
-    .km-title { font-size:22px; font-weight:700; }
-    .km-title small { font-size: 12px; color: #cbd2ff; margin-left: .5em; }
+    /* 上部二段パネル */
+    .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:12px; margin-top:12px; }
+    .row { display:grid; gap:12px; }
+    .row.top { grid-template-columns: auto 1fr auto auto; align-items:end; }
+    .row.second { grid-template-columns: auto 1fr auto 80px; align-items:end; }
+    .tabs { display:inline-flex; gap:8px; }
+    .tab { border:1px solid #ddd; background:#fff; border-radius:8px; padding:8px 12px; font-weight:700; cursor:pointer; }
+    .tab.is-active { background:#fff2f2; border-color:var(--accent); color:#d63a3a; }
+    .label { font-size:12px; color:#666; margin-bottom:4px; display:block; }
+    select { width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:8px; background:#fff; }
+    .btn { border:1px solid #ddd; background:#fff; border-radius:10px; padding:8px 14px; font-weight:700; cursor:pointer; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-primary { background:var(--primary); border-color:var(--primary); color:#fff; }
+    .btn-accent { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .btn-ghost { background:#fff; }
 
-    .km-panel { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top:16px; }
-    .km-ops-tabs { display:inline-flex; gap:8px; margin-bottom:10px; }
-    .km-tab { border:1px solid #ddd; background:#fff; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:600; }
-    .km-tab.is-active { background:#fff2f2; border-color:var(--accent); color:#d63a3a; }
-    .km-settings { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; align-items:end; }
-    .km-setting label { display:block; font-size:12px; color:#666; margin-bottom:4px; }
-    .km-select { width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:8px; background:#fff; }
-    .km-actions { display:flex; gap:8px; justify-content:flex-end; }
-    .km-btn { border:1px solid #ddd; background:#fff; border-radius:10px; padding:8px 14px; font-weight:700; cursor:pointer; }
-    .km-btn:disabled { opacity:.5; cursor:not-allowed; }
-    .km-btn-primary { background:var(--primary); border-color:var(--primary); color:#fff; }
-    .km-btn-accent { background:var(--accent); border-color:var(--accent); color:#fff; }
-    .km-btn-ghost { background:#fff; color:#333; }
-
-    .km-board { margin-top:14px; border:1px dashed #e8e8e8; border-radius:10px; padding:12px; }
-    .km-row { display:grid; grid-template-columns:1fr 60px 1fr 40px 1fr; gap:8px; align-items:start; }
-    .km-col { min-width:0; }
-    .km-col-operator,.km-col-equals { display:flex; align-items:center; justify-content:center; }
-    .km-label { font-size:12px; color:#666; margin:6px 0; }
-    .km-operator { font-size:24px; font-weight:900; color:var(--accent); }
-    .km-equals { font-size:20px; font-weight:900; color:#333; }
-    .km-value { text-align:center; margin-top:6px; color:#333; }
-    .km-num { font-weight:800; font-size:16px; }
-
-    .km-blocks { display:grid; grid-template-columns:repeat(10, 20px); gap:4px 4px; min-height:28px; }
-    .blk { width:20px; height:20px; border-radius:4px; background:#ffd5d5; border:1px solid #ffb3b3; box-shadow:0 1px 0 rgba(0,0,0,.04) inset; transform: translate(0,0); transition: transform .28s ease, opacity .18s ease; }
-    .blk.bA { background:#ffd5d5; border-color:#ffb3b3; }
-    .blk.bB { background:#d5ecff; border-color:#b3dbff; }
-    .blk.bSum { background:var(--sum); border-color:var(--sumBorder); }
+    /* 表示領域（縦配置：A / B / こたえ） */
+    .board { margin-top:14px; border:1px dashed #e8e8e8; border-radius:12px; padding:12px; }
+    .col { margin-bottom:12px; }
+    .heading { font-size:12px; color:#666; margin:6px 0; }
+    .val { margin-top:6px; font-weight:800; }
+    .blocks {
+      display:grid; grid-template-columns:repeat(10, 22px); gap:4px 4px; min-height:30px;
+      align-items:center;
+    }
+    .blk {
+      width:22px; height:22px; border-radius:4px; background:var(--aColor); border:1px solid var(--aBorder);
+      box-shadow:0 1px 0 rgba(0,0,0,.05) inset;
+      transform: translate(0,0); transition: transform .25s ease, opacity .15s ease;
+    }
+    .blk.A { background:var(--aColor); border-color:var(--aBorder); }
+    .blk.B { background:var(--bColor); border-color:var(--bBorder); }
+    .blk.S { background:var(--ansColor); border-color:var(--ansBorder); }
     .blk.fade { opacity: .15; }
-    .blk.dot-outline { outline: 2px dotted #888; outline-offset: -2px; }
+    .blk.dot { outline:2px dotted currentColor; outline-offset:-2px; }
+    .mark10, .mark20 {
+      width:2px; height:22px; background:#bbb; justify-self:center;
+    }
 
-    .km-answer { display:flex; gap:8px; align-items:center; margin-top:6px; }
-    .km-answer-select { min-width:120px; }
+    .formula { text-align:center; font-weight:800; font-size:16px; letter-spacing:.02em; }
+    .result { min-height:22px; margin-top:6px; font-weight:700; }
+    .result.ok { color:#d63a3a; } /* 赤〇 */
+    .result.ng { color:#666; }
 
-    .km-result { min-height:20px; margin-top:6px; font-weight:700; }
-    .km-result.ok { color:#d63a3a; }  /* 赤〇イメージ */
-    .km-result.ng { color:#666; }
+    .reward { display:grid; grid-template-columns: 120px auto; gap:12px; align-items:start; margin-top:12px; }
+    .stamp-box { width:120px; min-height:80px; border:2px dashed #ccc; border-radius:10px; display:grid; place-items:center; color:#bbb; font-size:24px; }
+    .yay-col { display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
+    .yay-btn { writing-mode: vertical-rl; text-orientation: mixed; }
 
-    .km-formula { margin-top:10px; text-align:center; font-weight:800; font-size:16px; letter-spacing:.02em; }
-
-    .km-reward-area { margin-top:12px; display:flex; gap:12px; align-items:center; }
-    .km-stamps { display:flex; gap:8px; align-items:center; }
-    .km-stamp-slot { width:56px; height:56px; border:2px dashed #ccc; border-radius:12px; display:grid; place-items:center; color:#bbb; }
-
-    /* 小画面 */
-    @media (max-width:720px){
-      .km-settings{grid-template-columns:1fr 1fr;}
-      .km-row{grid-template-columns:1fr 40px 1fr 30px 1fr;}
-      .km-blocks{grid-template-columns:repeat(10, 18px);}
-      .blk{width:18px; height:18px;}
+    @media (max-width:760px) {
+      .row.top { grid-template-columns: 1fr 1fr 1fr auto; }
+      .row.second { grid-template-columns: 1fr 1fr auto 80px; }
+      .blocks { grid-template-columns:repeat(10, 20px); }
+      .blk { width:20px; height:20px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="km-container">
-      <h1 class="km-title">みんなのさんすう <small>Ver.1.1.3 Fix2</small></h1>
-      <div>たしざん・ひきざん（両UI統合）</div>
+    <div class="wrap">
+      <h1 style="margin:0;">みんなのさんすう <small style="font-size:12px;color:#cbd2ff;margin-left:.5em;">Ver.1.1.3 Fix2</small></h1>
+      <div>たしざん・ひきざん（元仕様準拠／両UI統合）</div>
     </div>
   </header>
 
-  <main class="km-container">
-    <!-- 操作パネル -->
-    <section class="km-panel">
-      <div class="km-ops-tabs" role="tablist" aria-label="演算の選択">
-        <button class="km-tab is-active" data-op="add" role="tab" aria-selected="true">たしざん</button>
-        <button class="km-tab" data-op="sub" role="tab" aria-selected="false">ひきざん</button>
+  <main class="wrap">
+    <!-- 上段：演算タブ＋数指定＋スタート -->
+    <section class="panel">
+      <div class="row top">
+        <div class="tabs" role="tablist" aria-label="演算">
+          <button class="tab is-active" id="tabAdd" data-op="add" role="tab" aria-selected="true">たしざん</button>
+          <button class="tab" id="tabSub" data-op="sub" role="tab" aria-selected="false">ひきざん</button>
+        </div>
+
+        <div>
+          <label for="firstNum" class="label">はじめのかず</label>
+          <select id="firstNum"></select>
+        </div>
+        <div>
+          <label for="secondNum" class="label">つぎのかず</label>
+          <select id="secondNum"></select>
+        </div>
+
+        <div style="display:flex; align-items:end;">
+          <button id="btnStart" class="btn btn-primary">スタート</button>
+        </div>
       </div>
 
-      <div class="km-settings">
-        <div class="km-setting">
-          <label for="firstNum">はじめのかず</label>
-          <select id="firstNum" class="km-select"></select>
+      <!-- 二段目：出題タイプ＋難易度＋👑チャレンジ＋やったね！ -->
+      <div class="row second" style="margin-top:10px;">
+        <div>
+          <label for="mode" class="label">出題タイプ</label>
+          <select id="mode">
+            <option value="normal" selected>ふつう</option>
+            <option value="challenge">👑チャレンジ</option>
+          </select>
         </div>
-        <div class="km-setting">
-          <label for="secondNum">つぎのかず</label>
-          <select id="secondNum" class="km-select"></select>
-        </div>
-        <div class="km-setting">
-          <label for="difficulty">難易度</label>
-          <select id="difficulty" class="km-select">
+        <div>
+          <label for="difficulty" class="label">難易度</label>
+          <select id="difficulty">
             <option value="easy">やさしい（1〜10）</option>
             <option value="normal" selected>ふつう（1〜20）</option>
             <option value="hard">むずかしい（1〜50）</option>
           </select>
         </div>
-        <div class="km-actions">
-          <button id="btnStart" class="km-btn km-btn-primary">スタート</button>
-          <button id="btnReset" class="km-btn" disabled>やりなおし</button>
+
+        <div style="display:flex; align-items:end;">
+          <button id="btnChallenge" class="btn btn-ghost">👑 チャレンジ</button>
+        </div>
+
+        <div class="yay-col">
+          <button id="btnYay" class="btn btn-accent yay-btn" title="やったね！">やったね！</button>
         </div>
       </div>
     </section>
 
-    <!-- 表示領域 -->
-    <section class="km-board" aria-live="polite" aria-atomic="true">
-      <div class="km-row">
-        <div class="km-col">
-          <h2 class="km-label">はじめのかず</h2>
-          <div id="laneA" class="km-blocks" data-lane="A"></div>
-          <div class="km-value"><span id="valueA" class="km-num">0</span></div>
-        </div>
-
-        <div class="km-col km-col-operator">
-          <div id="opBadge" class="km-operator">＋</div>
-        </div>
-
-        <div class="km-col">
-          <h2 class="km-label">つぎのかず</h2>
-          <div id="laneB" class="km-blocks" data-lane="B"></div>
-          <div class="km-value"><span id="valueB" class="km-num">0</span></div>
-        </div>
-
-        <div class="km-col km-col-equals">
-          <div class="km-equals">＝</div>
-        </div>
-
-        <div class="km-col">
-          <h2 class="km-label">こたえ</h2>
-          <div id="laneAns" class="km-blocks km-blocks-answer" data-lane="ANS"></div>
-          <div class="km-answer">
-            <select id="answer" class="km-select km-answer-select" disabled></select>
-            <button id="btnCheck" class="km-btn km-btn-accent" disabled>こたえあわせ</button>
-          </div>
-          <div id="resultMsg" class="km-result" role="status"></div>
-        </div>
+    <!-- 表示領域（縦配置：A / B / こたえ） -->
+    <section class="board" aria-live="polite">
+      <div class="col">
+        <h2 class="heading">はじめのかず</h2>
+        <div id="laneA" class="blocks" data-lane="A"></div>
+        <div class="val"><span id="valA">0</span></div>
       </div>
 
-      <div class="km-formula">
+      <div class="col">
+        <h2 class="heading">つぎのかず</h2>
+        <div id="laneB" class="blocks" data-lane="B"></div>
+        <div class="val"><span id="valB">0</span></div>
+      </div>
+
+      <div class="col">
+        <h2 class="heading">こたえ</h2>
+        <div id="laneAns" class="blocks" data-lane="ANS"></div>
+        <div class="val">
+          <select id="answer" disabled></select>
+          <button id="btnCheck" class="btn btn-accent" disabled>こたえあわせ</button>
+        </div>
+        <div id="msg" class="result"></div>
+      </div>
+
+      <!-- 数式表示 -->
+      <div class="formula" style="margin-top:8px;">
         <span id="fA">0</span>
         <span id="fOp">＋</span>
         <span id="fB">0</span>
@@ -162,167 +178,191 @@
       </div>
     </section>
 
-    <!-- チャレンジ＆スタンプ -->
-    <section class="km-reward-area">
-      <button id="btnChallenge" class="km-btn km-btn-ghost" title="ランダム出題（かんむりチャレンジ）">👑 チャレンジ</button>
-      <div class="km-stamps">
-        <div class="km-stamp-slot" aria-label="ごほうびスタンプ"></div>
+    <!-- ごほうび -->
+    <section class="reward">
+      <div id="stampBox" class="stamp-box" aria-label="ごほうびスタンプ">—</div>
+      <div>
+        <p style="margin:0;color:#666;font-size:13px;">正解するとスタンプが増えるよ！</p>
       </div>
-    </section>
-
-    <!-- 自動チェックの簡易レポート -->
-    <section id="autoCheck" class="km-panel" style="margin-top:12px;">
-      <div><strong>自動チェック</strong></div>
-      <ul id="autoCheckLog" style="margin:6px 0 0 16px;"></ul>
     </section>
   </main>
 
-  <footer class="km-container" style="padding:16px; border-top:1px solid #eee; color:#666; font-size:13px;">
+  <footer class="wrap" style="padding:16px; border-top:1px solid #eee; color:#666; font-size:13px;">
     &copy; みんなのさんすう
   </footer>
 
   <script>
     // ====== 参照 ======
-    const $  = (s, el=document)=>el.querySelector(s);
-    const $$ = (s, el=document)=>[...el.querySelectorAll(s)];
-    const firstNum=$('#firstNum'), secondNum=$('#secondNum'), difficulty=$('#difficulty');
-    const tabs=$$('.km-tab'), opBadge=$('#opBadge');
-    const valueA=$('#valueA'), valueB=$('#valueB'), laneA=$('#laneA'), laneB=$('#laneB'), laneAns=$('#laneAns');
-    const ansSel=$('#answer'), btnStart=$('#btnStart'), btnReset=$('#btnReset'), btnCheck=$('#btnCheck'), resultMsg=$('#resultMsg');
-    const btnChallenge=$('#btnChallenge'); const fA=$('#fA'), fB=$('#fB'), fOp=$('#fOp'), fQ=$('#fQ');
-    const logBox=$('#autoCheckLog');
+    const $ = (s,el=document)=>el.querySelector(s);
+    const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
+    const tabAdd=$('#tabAdd'), tabSub=$('#tabSub');
+    const firstNum=$('#firstNum'), secondNum=$('#secondNum'), modeSel=$('#mode'), diffSel=$('#difficulty');
+    const btnStart=$('#btnStart'), btnChallenge=$('#btnChallenge'), btnYay=$('#btnYay');
+    const laneA=$('#laneA'), laneB=$('#laneB'), laneAns=$('#laneAns');
+    const valA=$('#valA'), valB=$('#valB');
+    const ansSel=$('#answer'), btnCheck=$('#btnCheck'), msg=$('#msg');
+    const fA=$('#fA'), fB=$('#fB'), fOp=$('#fOp'), fQ=$('#fQ');
 
     // ====== 状態 ======
     const BASE='/kids-math-app/';
     const DIFF_MAX={easy:10, normal:20, hard:50};
-    let op='add'; let A=0, B=0; const answeredSet=new Set();
+    let op='add'; let A=0; let B=0;
+    const answeredSet=new Set(); // 重複なし制御
 
-    // ====== 汎用 ======
-    function currentMax(){ return DIFF_MAX[difficulty.value]||20; }
-    function setOperator(k){ op=k; const ch=(k==='add')?'＋':'－'; opBadge.textContent=ch; fOp.textContent=ch; }
-    function getCorrect(){ return op==='add'? (A+B) : (A-B); }
-    function problemKey(a,b,op){ if(op==='add'){ const s=[a,b].sort((x,y)=>x-y); return `add:${s[0]},${s[1]}`; } return `sub:${a},${b}`; }
+    // ====== ユーティリティ ======
+    const sleep = (ms)=>new Promise(r=>setTimeout(r, ms));
+    function currentMax(){ return DIFF_MAX[diffSel.value] || 20; }
+    function setOperator(k){ op=k; fOp.textContent = (k==='add') ? '＋' : '－'; }
+    function leftJustify(el){ /* gridなのでデフォルト左詰め */ }
+    function problemKey(a,b,op){
+      if(op==='add'){ const s=[a,b].sort((x,y)=>x-y); return `add:${s[0]},${s[1]}`; }
+      return `sub:${a},${b}`;
+    }
+    function correct(){ return op==='add' ? (A+B) : (A-B); }
 
-    // ====== ブロック描画（左詰め） ======
+    // 10/20まとまりマーク（ガイド罫線）
+    function addGroupMarks(el, n){
+      // 10と20の位置にガイド（マーク）を差し込む
+      const colCount=10;
+      const idx10 = 10; const idx20 = 20;
+      const need10 = n >= idx10, need20 = n >= idx20;
+      if(need10){ const m=document.createElement('div'); m.className='mark10'; el.insertBefore(m, el.children[idx10-1]?.nextSibling || null); }
+      if(need20){ const m=document.createElement('div'); m.className='mark20'; el.insertBefore(m, el.children[idx20-1]?.nextSibling || null); }
+    }
+
+    // ブロック作成
+    function makeBlock(cls){ const d=document.createElement('div'); d.className=`blk ${cls}`; return d; }
     function renderBlocks(el, n, cls){
       el.innerHTML='';
-      for(let i=0;i<n;i++){ const d=document.createElement('div'); d.className=`blk ${cls}`; el.appendChild(d); }
+      for(let i=0;i<n;i++){ el.appendChild(makeBlock(cls)); }
+      addGroupMarks(el, n);
     }
-    function leftJustify(el){ /* gridが左詰めのため何もしないが、将来フレックスに変える場合に備えた置換ポイント */ }
 
-    // ====== フォーミュラ更新 ======
-    function updateFormula(show=false){ fA.textContent=A; fB.textContent=B; fQ.textContent=show?getCorrect():'？'; }
+    function updateFormula(show=false){
+      fA.textContent=A; fB.textContent=B; fQ.textContent=show?correct():'？';
+    }
+    function applyValues(){
+      valA.textContent=A; valB.textContent=B;
+      renderBlocks(laneA, A, 'A');
+      renderBlocks(laneB, B, 'B');
+      renderBlocks(laneAns, 0, 'S');
+      updateFormula(false);
+      msg.textContent=''; msg.className='result';
+      leftJustify(laneA); leftJustify(laneB); leftJustify(laneAns);
+    }
 
-    // ====== セレクト充填 ======
-    function fillNumberOptions(max){
+    function fillSelects(){
       [firstNum, secondNum, ansSel].forEach(s=>s.innerHTML='');
+      const max=currentMax();
       for(let i=0;i<=max;i++){
-        firstNum.appendChild(new Option(String(i),String(i)));
-        secondNum.appendChild(new Option(String(i),String(i)));
+        firstNum.appendChild(new Option(String(i), String(i)));
+        secondNum.appendChild(new Option(String(i), String(i)));
       }
       ansSel.appendChild(new Option('？','',true,true));
       ansSel.disabled=true; btnCheck.disabled=true;
     }
 
-    // ====== UI更新 ======
-    function applyValues(){
-      valueA.textContent=A; valueB.textContent=B;
-      renderBlocks(laneA,A,'bA'); renderBlocks(laneB,B,'bB'); renderBlocks(laneAns,0,'bSum');
-      leftJustify(laneA); leftJustify(laneB); leftJustify(laneAns);
-      updateFormula(false);
-      resultMsg.textContent=''; resultMsg.className='km-result';
-    }
-
-    // ====== 回答候補 ======
     function buildChoices(){
-      const correct=getCorrect(); const max=Math.max(currentMax(), Math.max(A,B)+5);
-      const deltas=[-3,-2,-1,1,2,3,4,5,6]; const set=new Set([correct]);
-      while(set.size<6){ const base=correct+deltas[Math.floor(Math.random()*deltas.length)]; set.add(Math.max(0,Math.min(max,base))); }
+      const c=correct();
+      const max=Math.max(currentMax(), Math.max(A,B)+5);
+      const deltas=[-3,-2,-1,1,2,3,4,5,6];
+      const set=new Set([c]);
+      while(set.size<6){
+        const base=c+deltas[Math.floor(Math.random()*deltas.length)];
+        set.add(Math.max(0, Math.min(max, base)));
+      }
       const arr=[...set].sort((x,y)=>x-y);
       ansSel.innerHTML=''; ansSel.appendChild(new Option('？','',true,true));
-      arr.forEach(n=>ansSel.appendChild(new Option(String(n),String(n))));
-      ansSel.disabled=false; btnCheck.disabled=true;
+      arr.forEach(n=>ansSel.appendChild(new Option(String(n), String(n))));
+      ansSel.disabled=true; btnCheck.disabled=true;
+      updateFormula(false);
     }
 
-    // ====== たしざんアニメ（Ver.1.0仕様の要点に沿った統合版） ======
+    // ====== たしざんアニメ（元仕様） ======
     async function animateAddition(){
-      // A を左から順に「こたえ欄」へ正確に移動 → 元は消去して左詰め
-      const aBlocks=[...laneA.children];
-      for(let i=0;i<aBlocks.length;i++){
-        const blk=aBlocks[i];
-        blk.style.transform='translate(0, -26px)';
-        await new Promise(r=>setTimeout(r, 80));
-        blk.remove();
-        const sum = document.createElement('div'); sum.className='blk bSum'; laneAns.appendChild(sum);
+      // A左から→直前ブロック右隣へ正確移動（1つずつ）
+      for(let i=0;i<A;i++){
+        const a = laneA.children[0]; if(!a) break;
+        a.style.transform='translate(0, -28px)'; await sleep(90);
+        a.remove();
+        const s = makeBlock('S'); laneAns.appendChild(s); leftJustify(laneAns);
       }
-      leftJustify(laneA); leftJustify(laneAns);
+      leftJustify(laneA);
 
-      // 500ms 遅延ののち B を左から順に同様に移動
-      await new Promise(r=>setTimeout(r, 500));
-      const bBlocks=[...laneB.children];
-      for(let i=0;i<bBlocks.length;i++){
-        const blk=bBlocks[i];
-        blk.style.transform='translate(0, -26px)';
-        await new Promise(r=>setTimeout(r, 80));
-        blk.remove();
-        const sum = document.createElement('div'); sum.className='blk bSum'; laneAns.appendChild(sum);
+      // 500ms遅延
+      await sleep(500);
+
+      // 次にB左から→右隣、移動元は消去して左詰め
+      for(let i=0;i<B;i++){
+        const b = laneB.children[0]; if(!b) break;
+        b.style.transform='translate(0, -28px)'; await sleep(90);
+        b.remove();
+        const s = makeBlock('S'); laneAns.appendChild(s); leftJustify(laneAns);
       }
-      leftJustify(laneB); leftJustify(laneAns);
+      leftJustify(laneB);
+
+      // 完了後合計色（Sは既に合計色）、A/B再表示を500ms遅延
+      await sleep(500);
+      renderBlocks(laneA, A, 'A'); renderBlocks(laneB, B, 'B'); leftJustify(laneA); leftJustify(laneB);
     }
 
-    // ====== ひきざんアニメ（Ver.1.0仕様の要点に沿った統合版） ======
+    // ====== ひきざんアニメ（元仕様） ======
     async function animateSubtraction(){
-      // 開始直後：A の全数を一度にこたえ欄へ移動（元は消去/左詰め）
-      const aBlocks=[...laneA.children];
-      aBlocks.forEach(b=>b.classList.add('fade'));
-      await new Promise(r=>setTimeout(r, 160));
+      // 開始直後：A全数を一度にこたえ欄へ移動（元色・元は消去/左詰め）
+      laneA.querySelectorAll('.blk').forEach(b=>b.classList.add('fade'));
+      await sleep(160);
       laneA.innerHTML='';
-      for(let i=0;i<A;i++){ const sum=document.createElement('div'); sum.className='blk bSum'; laneAns.appendChild(sum); }
+      for(let i=0;i<A;i++){ laneAns.appendChild(makeBlock('S')); }
       leftJustify(laneAns);
 
-      // B を左から順にこたえ欄右端へ重ね → 両方消去（点線枠を一瞬表示）
+      // B左から順にこたえ欄右端へ重ねて両方消去（点線枠を一瞬表示）
       for(let i=0;i<B;i++){
-        await new Promise(r=>setTimeout(r, 120));
+        await sleep(120);
         const ansBlocks=[...laneAns.children];
-        const last=ansBlocks[ansBlocks.length-1];
-        if(last){
-          last.classList.add('dot-outline');
-          await new Promise(r=>setTimeout(r, 100));
-          last.remove(); // Aの1つを消す
-        }
-        const bblk=laneB.children[0];
-        if(bblk){ bblk.remove(); } // Bの該当ブロックも消す
+        const last=ansBlocks[ansBlocks.length-1]; // 右端
+        if(last){ last.classList.add('dot'); await sleep(100); last.remove(); }
+        const bblk=laneB.children[0]; if(bblk){ bblk.remove(); }
       }
       leftJustify(laneB); leftJustify(laneAns);
+
+      // 結果色へ切替（Sのまま）、A/B再表示
+      renderBlocks(laneA, A, 'A'); renderBlocks(laneB, B, 'B'); leftJustify(laneA); leftJustify(laneB);
     }
 
-    // ====== 紙吹雪（軽量DOM） ======
-    function confettiMini(){
+    // ====== 紙吹雪（全画面） ======
+    function confetti(){
       const box=document.createElement('div'); Object.assign(box.style,{position:'fixed',inset:'0',pointerEvents:'none',zIndex:'9999'}); document.body.appendChild(box);
-      const count=80; for(let i=0;i<count;i++){ const p=document.createElement('i'); const size=Math.random()*8+4;
-        Object.assign(p.style,{position:'absolute',left:(Math.random()*100)+'vw',top:'-10px',width:size+'px',height:size+'px',
-          background:`hsl(${Math.random()*360},90%,60%)`,transform:`rotate(${Math.random()*360}deg)`,borderRadius:'2px',opacity:'0.9',
-          transition:'transform 1.2s linear, top 1.2s linear, opacity .2s ease-out' });
+      const count=120;
+      for(let i=0;i<count;i++){
+        const p=document.createElement('i');
+        const size=Math.random()*8+5;
+        Object.assign(p.style,{
+          position:'absolute', left:(Math.random()*100)+'vw', top:'-10px',
+          width:size+'px', height:size+'px',
+          background:`hsl(${Math.random()*360},90%,60%)`,
+          transform:`rotate(${Math.random()*360}deg)`,
+          borderRadius:'2px', opacity:'0.95',
+          transition:'transform 1.4s linear, top 1.4s linear, opacity .25s ease-out'
+        });
         box.appendChild(p);
-        requestAnimationFrame(()=>{ p.style.top=(Math.random()*100+10)+'vh'; p.style.transform=`translateY(0) rotate(${Math.random()*720}deg)`; });
-      } setTimeout(()=>box.remove(),1400);
+        requestAnimationFrame(()=>{
+          p.style.top=(Math.random()*100+10)+'vh';
+          p.style.transform=`translateY(0) rotate(${Math.random()*720}deg)`;
+        });
+      }
+      setTimeout(()=>box.remove(), 1600);
     }
 
-    // ====== イベント束ね ======
-    tabs.forEach(b=>b.addEventListener('click',()=>{
-      tabs.forEach(x=>x.classList.remove('is-active')); b.classList.add('is-active');
-      setOperator(b.dataset.op); applyValues();
-    }));
-    difficulty.addEventListener('change',()=>{
-      fillNumberOptions(currentMax());
-      A=Math.min(A,currentMax()); B=Math.min(B,currentMax());
-      firstNum.value=String(A); secondNum.value=String(B); applyValues();
-    });
-    firstNum.addEventListener('change',()=>{ A=Number(firstNum.value); valueA.textContent=A; renderBlocks(laneA,A,'bA'); leftJustify(laneA); updateFormula(false); });
-    secondNum.addEventListener('change',()=>{ B=Number(secondNum.value); valueB.textContent=B; renderBlocks(laneB,B,'bB'); leftJustify(laneB); updateFormula(false); });
+    // ====== イベント ======
+    tabAdd.addEventListener('click', ()=>{ tabAdd.classList.add('is-active'); tabSub.classList.remove('is-active'); setOperator('add'); applyValues(); });
+    tabSub.addEventListener('click', ()=>{ tabSub.classList.add('is-active'); tabAdd.classList.remove('is-active'); setOperator('sub'); applyValues(); });
 
-    btnStart.addEventListener('click',()=>{
-      A=Number(firstNum.value); B=Number(secondNum.value);
+    diffSel.addEventListener('change', ()=>{ fillSelects(); A=Math.min(A, currentMax()); B=Math.min(B, currentMax()); firstNum.value=String(A); secondNum.value=String(B); applyValues(); });
+    firstNum.addEventListener('change', ()=>{ A=Number(firstNum.value); valA.textContent=A; renderBlocks(laneA,A,'A'); leftJustify(laneA); updateFormula(false); });
+    secondNum.addEventListener('change', ()=>{ B=Number(secondNum.value); valB.textContent=B; renderBlocks(laneB,B,'B'); leftJustify(laneB); updateFormula(false); });
+
+    btnStart.addEventListener('click', ()=>{
+      // 重複回避（チャレンジ時にも効く）：同一問題ならランダム再出題
       const key=problemKey(A,B,op);
       if(answeredSet.has(key)){
         const max=currentMax();
@@ -330,74 +370,66 @@
         else { const x=Math.floor(Math.random()*(max+1)), y=Math.floor(Math.random()*(max+1)); A=Math.max(x,y); B=Math.min(x,y); }
         firstNum.value=String(A); secondNum.value=String(B);
       }
-      applyValues(); buildChoices(); btnReset.disabled=false;
+      applyValues(); buildChoices();
     });
 
-    btnReset.addEventListener('click',()=>{
-      laneAns.innerHTML=''; ansSel.selectedIndex=0; ansSel.disabled=true; btnCheck.disabled=true;
-      resultMsg.textContent=''; resultMsg.className='km-result'; updateFormula(false);
-    });
-
-    ansSel.addEventListener('change',()=>{ btnCheck.disabled=(ansSel.value===''); });
-
-    btnCheck.addEventListener('click', async ()=>{
-      const val=Number(ansSel.value), correct=getCorrect(); if(Number.isNaN(val)) return;
-
-      // 演算別アニメ
-      if(val===correct){
-        if(op==='add'){ await animateAddition(); }
-        else { await animateSubtraction(); }
-        resultMsg.textContent='🅾 せいかい！'; resultMsg.className='km-result ok';
-
-        // スタンプ & 紙吹雪
-        const slot=document.querySelector('.km-stamp-slot'); slot.textContent='⭐️'; confettiMini();
-
-        // 3秒ではなく短縮で次へ（UX強化）
-        setTimeout(()=>btnChallenge.click(), 800);
-        answeredSet.add(problemKey(A,B,op));
-        updateFormula(true);
-      } else {
-        resultMsg.textContent='もういちど！'; resultMsg.className='km-result ng';
-      }
-    });
-
-    btnChallenge.addEventListener('click',()=>{
+    btnChallenge.addEventListener('click', ()=>{
+      modeSel.value='challenge';
       const max=currentMax();
       if(op==='add'){ A=Math.floor(Math.random()*(max+1)); B=Math.floor(Math.random()*(max+1)); }
       else { const x=Math.floor(Math.random()*(max+1)), y=Math.floor(Math.random()*(max+1)); A=Math.max(x,y); B=Math.min(x,y); }
-      firstNum.value=String(A); secondNum.value=String(B); applyValues(); buildChoices(); btnReset.disabled=false;
+      firstNum.value=String(A); secondNum.value=String(B);
+      applyValues(); buildChoices();
     });
 
-    // ====== 初期表示 ======
-    fillNumberOptions(currentMax());
-    A=3; B=2; firstNum.value='3'; secondNum.value='2'; setOperator('add'); applyValues();
+    ansSel.addEventListener('change', ()=>{ btnCheck.disabled = (ansSel.value===''); });
+
+    btnCheck.addEventListener('click', async ()=>{
+      const val=Number(ansSel.value);
+      const c=correct();
+      if(Number.isNaN(val)) return;
+
+      if(val===c){
+        // 元仕様のアニメ
+        if(op==='add'){ await animateAddition(); }
+        else { await animateSubtraction(); }
+
+        msg.textContent='🅾 せいかい！'; msg.className='result ok';
+        $('#stampBox').textContent='⭐️';
+        confetti();
+
+        // 👑チャレンジ時は3秒後に自動次へ
+        const isChallenge = (modeSel.value==='challenge');
+        answeredSet.add(problemKey(A,B,op));
+        updateFormula(true);
+        if(isChallenge){ setTimeout(()=>btnChallenge.click(), 3000); }
+      } else {
+        msg.textContent='もういちど！'; msg.className='result ng';
+        // 再入力可（プルダウンのまま）
+      }
+    });
+
+    btnYay.addEventListener('click', ()=>{
+      // ごほうびを明示的に押したときの小エフェクト
+      confetti();
+    });
+
+    // ====== 初期化 ======
+    (function init(){
+      setOperator('add');
+      fillSelects();
+      A=3; B=2;
+      firstNum.value='3'; secondNum.value='2';
+      applyValues();
+    })();
 
     // ====== Service Worker 登録（/kids-math-app/ スコープ） ======
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          const reg = await navigator.serviceWorker.register('./sw.js', { scope: BASE });
-          addLog(`SW: 登録OK scope=${reg.scope}`);
-        } catch (err) {
-          addLog('SW: 登録失敗（sw.js未配置または権限エラー）');
-        }
+      window.addEventListener('load', async ()=>{
+        try { await navigator.serviceWorker.register('./sw.js', { scope: BASE }); }
+        catch(e){ /* オンラインのみ動作でもOK */ }
       });
-    } else {
-      addLog('SW: 非対応ブラウザ');
     }
-
-    // ====== 自動チェック（簡易） ======
-    function addLog(t){ const li=document.createElement('li'); li.textContent=t; logBox.appendChild(li); }
-    (async () => {
-      // manifest
-      const hasManifest = !!document.querySelector('link[rel="manifest"]');
-      addLog(`manifest: ${hasManifest ? 'OK' : '不足'}`);
-
-      // アイコン疎通
-      const icons=[BASE+'apple-touch-icon.png', BASE+'icon-192.png', BASE+'icon-512.png'];
-      const rs=await Promise.allSettled(icons.map(u=>fetch(u,{method:'HEAD', cache:'no-store'})));
-      rs.forEach((r,i)=>addLog(`ICON ${i+1}: ${r.status==='fulfilled' && r.value.ok ? 'OK' : '未検出'}`));
-    })();
   </script>
 </body>
 </html>
